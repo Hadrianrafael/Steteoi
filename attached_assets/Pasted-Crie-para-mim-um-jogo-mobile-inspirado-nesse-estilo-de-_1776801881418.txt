@@ -1,0 +1,122 @@
+Crie para mim um jogo mobile **inspirado nesse estilo de conquista de territórios**, com visual moderno e profissional, pronto para Android e iPhone.
+
+## Nome provisório:
+
+**Empire Clash**
+
+## Estilo do jogo:
+
+* Estratégia casual em tempo real
+* Conquista de territórios no mapa
+* Jogabilidade viciante e rápida
+* Partidas curtas de 2 a 5 minutos
+* Visual limpo e moderno
+* Interface parecida com jogos mobile top de ranking
+
+## Como funciona:
+
+* O jogador começa dominando alguns estados/regiões.
+* Cada território gera tropas automaticamente com o tempo.
+* O jogador arrasta de um território para outro para atacar ou reforçar.
+* Quando atacar inimigos e vencer, conquista a região.
+* Ganha quem dominar todo o mapa.
+
+## Modos de jogo:
+
+1. Campanha com níveis progressivos
+2. Multiplayer online 1v1
+3. Multiplayer com até 5 jogadores
+4. Modo ranked (liga)
+5. Eventos semanais
+
+## Mapas:
+
+* Estados Unidos (igual exemplo)
+* Brasil
+* Europa
+* Mundo
+* Mapas futuristas
+
+## Sistema de progressão:
+
+* Níveis de jogador
+* Liga Bronze / Prata / Ouro / Diamante
+* Missões diárias
+* Recompensas por login
+* Passe de temporada
+
+## Economia:
+
+* Moedas
+* Gemas
+* Skins de territórios
+* Skins de tropas
+* Pacotes na loja
+* Anúncio recompensado opcional
+
+## Interface:
+
+Na tela inicial quero:
+
+Topo:
+
+* Configurações
+* Moedas
+* Gemas
+* Energia
+
+Centro:
+
+* Mapa animado
+* Botão grande **JOGAR**
+* Mostrar nível atual
+
+Rodapé:
+
+* Loja
+* Inventário
+* Batalha
+* Ranking
+* Eventos
+
+## Inteligência Artificial:
+
+* Bots inteligentes
+* Dificuldade progressiva
+* IA agressiva e estratégica
+
+## Gráficos:
+
+* Bonitos e modernos
+* Efeitos de ataque
+* Animações suaves
+* Partículas
+* UI premium
+
+## Tecnologias:
+
+* Unity 3D
+* C#
+* Photon Fusion ou Mirror multiplayer
+* Firebase login/save
+* AdMob monetização
+
+## Extras importantes:
+
+* Código limpo e profissional
+* Projeto organizado
+* Fácil publicar na Play Store
+* Otimizado para celular fraco e forte
+
+## Quero pronto:
+
+* Menu inicial
+* Sistema de batalha
+* Multiplayer funcionando
+* Loja
+* Progressão
+* Sistema de anúncios
+* Sons
+* Tudo completo
+
+Faça esse projeto completo e profissional.
