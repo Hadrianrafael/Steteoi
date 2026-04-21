@@ -23,28 +23,17 @@ export const WORLD_MAP: GameMap = {
   width: 720,
   height: 360,
   territories: [
-    // Americas
-    { id: "us", name: "EUA", flag: "🇺🇸", x: 140, y: 120, adj: ["br", "uk"] },
-    { id: "br", name: "Brasil", flag: "🇧🇷", x: 220, y: 240, adj: ["us", "za"] },
-
-    // Europe
-    { id: "uk", name: "Reino Unido", flag: "🇬🇧", x: 330, y: 110, isIsland: true, adj: ["us", "fr", "ru"] },
-    { id: "fr", name: "França", flag: "🇫🇷", x: 360, y: 145, adj: ["uk", "eg", "ru"] },
-    { id: "ru", name: "Rússia", flag: "🇷🇺", x: 470, y: 95, adj: ["uk", "fr", "cn", "in"] },
-
-    // Africa
-    { id: "eg", name: "Egito", flag: "🇪🇬", x: 410, y: 195, adj: ["fr", "za", "in"] },
-    { id: "za", name: "África do Sul", flag: "🇿🇦", x: 410, y: 290, adj: ["eg", "br", "mg"] },
-    { id: "mg", name: "Madagascar", flag: "🇲🇬", x: 470, y: 280, isIsland: true, adj: ["za"] },
-
-    // Asia
-    { id: "in", name: "Índia", flag: "🇮🇳", x: 520, y: 200, adj: ["ru", "eg", "cn"] },
-    { id: "cn", name: "China", flag: "🇨🇳", x: 560, y: 160, adj: ["ru", "in", "jp", "id"] },
+    { id: "us", name: "EUA", flag: "🇺🇸", x: 150, y: 130, adj: ["br", "uk"] },
+    { id: "br", name: "Brasil", flag: "🇧🇷", x: 230, y: 250, adj: ["us", "za"] },
+    { id: "uk", name: "Reino Unido", flag: "🇬🇧", x: 340, y: 115, isIsland: true, adj: ["us", "fr", "ru"] },
+    { id: "fr", name: "França", flag: "🇫🇷", x: 365, y: 155, adj: ["uk", "eg"] },
+    { id: "ru", name: "Rússia", flag: "🇷🇺", x: 470, y: 100, adj: ["uk", "cn"] },
+    { id: "eg", name: "Egito", flag: "🇪🇬", x: 415, y: 200, adj: ["fr", "za", "in"] },
+    { id: "za", name: "África do Sul", flag: "🇿🇦", x: 410, y: 290, adj: ["eg", "br"] },
+    { id: "in", name: "Índia", flag: "🇮🇳", x: 520, y: 205, adj: ["eg", "cn"] },
+    { id: "cn", name: "China", flag: "🇨🇳", x: 565, y: 160, adj: ["ru", "in", "jp", "au"] },
     { id: "jp", name: "Japão", flag: "🇯🇵", x: 635, y: 140, isIsland: true, adj: ["cn"] },
-    { id: "id", name: "Indonésia", flag: "🇮🇩", x: 590, y: 245, isIsland: true, adj: ["cn", "au"] },
-
-    // Oceania
-    { id: "au", name: "Austrália", flag: "🇦🇺", x: 620, y: 295, adj: ["id"] },
+    { id: "au", name: "Austrália", flag: "🇦🇺", x: 620, y: 295, isIsland: true, adj: ["cn"] },
   ],
 };
 

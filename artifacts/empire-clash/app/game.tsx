@@ -61,7 +61,7 @@ type Flight = {
   duration: number;
 };
 
-const NUM_PLAYERS = 4;
+const NUM_PLAYERS = 5;
 
 const PLANE_BASE_DURATION = 1300;
 
