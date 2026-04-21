@@ -13,8 +13,8 @@ import { PLAYER_NAMES } from "@/lib/gameEngine";
 export default function ResultScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ winner?: string; mapId?: string }>();
-  const { addCoins, addGems, addXp, addTrophies, advanceCampaign } = useGame();
+  const params = useLocalSearchParams<{ winner?: string }>();
+  const { addCoins, addGems, addXp, addTrophies, addWin } = useGame();
 
   const won = params.winner === "player";
   const winnerName = (PLAYER_NAMES as Record<string, string>)[params.winner ?? ""] ??
@@ -38,7 +38,7 @@ export default function ResultScreen() {
     addGems(gems);
     addXp(xp);
     addTrophies(trophies);
-    if (won) advanceCampaign();
+    if (won) addWin();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const coins = won ? 250 : 50;
@@ -111,9 +111,7 @@ export default function ResultScreen() {
         <PrimaryButton
           label="JOGAR NOVAMENTE"
           variant="gold"
-          onPress={() =>
-            router.replace(`/play?mapId=${params.mapId ?? "usa"}` as never)
-          }
+          onPress={() => router.replace("/game")}
           icon={<FontAwesome5 name="redo" size={16} color={game.bgDeep} />}
         />
         <Pressable

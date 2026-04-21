@@ -11,22 +11,21 @@ type Item = {
   label: string;
   icon: keyof typeof FontAwesome5.glyphMap;
   route: string;
-  center?: boolean;
 };
 
 const ITEMS: Item[] = [
   { label: "Loja", icon: "store", route: "/shop" },
-  { label: "Inventário", icon: "shield-alt", route: "/inventory" },
-  { label: "Batalha", icon: "crosshairs", route: "/play", center: true },
+  { label: "Aviões", icon: "plane", route: "/planes" },
+  { label: "Melhorias", icon: "tools", route: "/upgrades" },
+  { label: "Habilidades", icon: "bolt", route: "/skills" },
   { label: "Ranking", icon: "trophy", route: "/ranking" },
-  { label: "Eventos", icon: "calendar-alt", route: "/events" },
 ];
 
 export function BottomNav() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
-  const webBottom = Platform.OS === "web" ? 34 : 0;
+  const webBottom = Platform.OS === "web" ? 30 : 0;
 
   return (
     <LinearGradient
@@ -36,40 +35,30 @@ export function BottomNav() {
       <View style={styles.row}>
         {ITEMS.map((item) => {
           const active = pathname === item.route;
-          if (item.center) {
-            return (
-              <Pressable
-                key={item.route}
-                onPress={() => router.push(item.route as never)}
-                style={styles.centerWrap}
-              >
-                <LinearGradient
-                  colors={[game.primary, game.primaryDark]}
-                  style={styles.centerBtn}
-                >
-                  <FontAwesome5
-                    name={item.icon}
-                    size={26}
-                    color={game.text}
-                  />
-                </LinearGradient>
-                <Text style={[styles.label, styles.centerLabel]}>
-                  {item.label}
-                </Text>
-              </Pressable>
-            );
-          }
           return (
             <Pressable
               key={item.route}
               onPress={() => router.push(item.route as never)}
-              style={styles.item}
+              style={({ pressed }) => [
+                styles.item,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
             >
-              <FontAwesome5
-                name={item.icon}
-                size={20}
-                color={active ? game.gold : game.textDim}
-              />
+              <View
+                style={[
+                  styles.iconWrap,
+                  active && {
+                    backgroundColor: game.gold + "22",
+                    borderColor: game.gold,
+                  },
+                ]}
+              >
+                <FontAwesome5
+                  name={item.icon}
+                  size={18}
+                  color={active ? game.gold : game.textDim}
+                />
+              </View>
               <Text
                 style={[
                   styles.label,
@@ -89,47 +78,32 @@ export function BottomNav() {
 const styles = StyleSheet.create({
   wrap: {
     paddingTop: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     borderTopWidth: 1,
     borderTopColor: game.border,
   },
   row: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     justifyContent: "space-around",
   },
   item: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: 4,
     gap: 4,
   },
-  label: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-  },
-  centerWrap: {
-    flex: 1,
-    alignItems: "center",
-    marginTop: -28,
-    gap: 4,
-  },
-  centerBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 4,
-    borderColor: game.bgDeep,
-    shadowColor: game.primary,
-    shadowOpacity: 0.6,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 12,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
-  centerLabel: {
-    color: game.text,
-    fontFamily: "Inter_700Bold",
+  label: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
   },
 });

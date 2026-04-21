@@ -1,8 +1,11 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
+  Easing,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +25,7 @@ type Pack = {
   reward: { coins?: number; gems?: number; energy?: number };
   badge?: string;
   color: string;
+  icon: keyof typeof FontAwesome5.glyphMap;
 };
 
 const PACKS: Pack[] = [
@@ -34,6 +38,7 @@ const PACKS: Pack[] = [
     reward: { coins: 1000, gems: 10 },
     badge: "GRÁTIS",
     color: game.success,
+    icon: "gift",
   },
   {
     id: "energy",
@@ -43,6 +48,7 @@ const PACKS: Pack[] = [
     currency: "gems",
     reward: { energy: 5 },
     color: game.energy,
+    icon: "bolt",
   },
   {
     id: "gold-chest",
@@ -53,6 +59,7 @@ const PACKS: Pack[] = [
     reward: { coins: 5000 },
     badge: "POPULAR",
     color: game.gold,
+    icon: "box-open",
   },
   {
     id: "gem-pack",
@@ -62,16 +69,18 @@ const PACKS: Pack[] = [
     currency: "coins",
     reward: { gems: 200 },
     color: game.gem,
+    icon: "gem",
   },
   {
-    id: "warlord",
-    title: "Bundle Comandante",
-    desc: "10k moedas + 500 gemas + skin",
+    id: "vip",
+    title: "Passe VIP",
+    desc: "Energia máxima dobrada permanentemente",
     cost: 4999,
     currency: "real",
-    reward: { coins: 10000, gems: 500 },
-    badge: "MELHOR VALOR",
-    color: game.primary,
+    reward: {},
+    badge: "VIP",
+    color: game.purple,
+    icon: "crown",
   },
 ];
 
@@ -84,32 +93,89 @@ const SKINS = [
   { id: "verde", name: "Esmeralda", cost: 60, currency: "gems" as const, color: game.success },
 ];
 
+const REWARDED_ADS = [
+  { id: "ad-coins", label: "Moedas", reward: 200, type: "coins" as const, icon: "coins" as const, color: game.gold },
+  { id: "ad-gems", label: "Gemas", reward: 5, type: "gems" as const, icon: "gem" as const, color: game.gem },
+  { id: "ad-energy", label: "Energia", reward: 2, type: "energy" as const, icon: "bolt" as const, color: game.energy },
+];
+
 export default function ShopScreen() {
-  const { profile, addCoins, addGems, refillEnergy, spendCoins, spendGems, buySkin, selectSkin } =
-    useGame();
-  const [tab, setTab] = useState<"packs" | "skins">("packs");
+  const {
+    profile,
+    addCoins,
+    addGems,
+    refillEnergy,
+    addEnergy,
+    spendCoins,
+    spendGems,
+    buySkin,
+    selectSkin,
+    activateVip,
+  } = useGame();
+  const [tab, setTab] = useState<"packs" | "skins" | "ads">("packs");
+  const [adShowing, setAdShowing] = useState<(typeof REWARDED_ADS)[number] | null>(null);
+  const [adProgress, setAdProgress] = useState(0);
+  const adAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!adShowing) return;
+    setAdProgress(0);
+    adAnim.setValue(0);
+    Animated.timing(adAnim, {
+      toValue: 1,
+      duration: 4000,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (!finished || !adShowing) return;
+      const a = adShowing;
+      if (a.type === "coins") addCoins(a.reward);
+      if (a.type === "gems") addGems(a.reward);
+      if (a.type === "energy") addEnergy(a.reward);
+      setAdShowing(null);
+    });
+    const id = setInterval(() => {
+      const v = (adAnim as unknown as { _value: number })._value ?? 0;
+      setAdProgress(v);
+    }, 100);
+    return () => clearInterval(id);
+  }, [adShowing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleBuy = (pack: Pack) => {
     if (pack.currency === "real") {
-      // Mocked free claim or premium prompt
       if (pack.cost === 0) {
         if (pack.reward.coins) addCoins(pack.reward.coins);
         if (pack.reward.gems) addGems(pack.reward.gems);
         Alert.alert("Recompensado", `${pack.title} resgatado!`);
         return;
       }
+      if (pack.id === "vip") {
+        Alert.alert(
+          "Passe VIP",
+          "Compra real necessária. Aceita ativar a versão demo?",
+          [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Ativar demo",
+              onPress: () => {
+                activateVip();
+                Alert.alert("VIP ativo!", "Energia máxima dobrada.");
+              },
+            },
+          ],
+        );
+        return;
+      }
       Alert.alert(
         "Compra premium",
-        `${pack.title} requer compra real. Conecte seu método de pagamento na próxima atualização.`,
+        `${pack.title} requer compra real (R$ ${(pack.cost / 100).toFixed(2)}).`,
       );
       return;
     }
     const ok =
-      pack.currency === "coins"
-        ? spendCoins(pack.cost)
-        : spendGems(pack.cost);
+      pack.currency === "coins" ? spendCoins(pack.cost) : spendGems(pack.cost);
     if (!ok) {
-      Alert.alert("Saldo insuficiente", "Adquira mais moedas ou gemas.");
+      Alert.alert("Saldo insuficiente");
       return;
     }
     if (pack.reward.coins) addCoins(pack.reward.coins);
@@ -123,8 +189,7 @@ export default function ShopScreen() {
       selectSkin(s.id);
       return;
     }
-    const ok = buySkin(s.id, s.cost, s.currency);
-    if (!ok) {
+    if (!buySkin(s.id, s.cost, s.currency)) {
       Alert.alert("Saldo insuficiente");
       return;
     }
@@ -134,16 +199,20 @@ export default function ShopScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.tabs}>
-        {(["packs", "skins"] as const).map((t) => (
+        {(
+          [
+            ["packs", "PACOTES"],
+            ["ads", "ANÚNCIOS"],
+            ["skins", "SKINS"],
+          ] as const
+        ).map(([t, label]) => (
           <Pressable
             key={t}
             onPress={() => setTab(t)}
             style={[styles.tab, tab === t && styles.tabActive]}
           >
-            <Text
-              style={[styles.tabText, tab === t && styles.tabTextActive]}
-            >
-              {t === "packs" ? "PACOTES" : "SKINS"}
+            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+              {label}
             </Text>
           </Pressable>
         ))}
@@ -157,30 +226,16 @@ export default function ShopScreen() {
                 colors={[game.surfaceElevated, game.surface]}
                 style={[styles.packCard, { borderColor: p.color + "55" }]}
               >
-                <View style={[styles.packIcon, { backgroundColor: p.color + "22" }]}>
-                  <FontAwesome5
-                    name={
-                      p.id === "energy"
-                        ? "bolt"
-                        : p.id === "starter"
-                          ? "gift"
-                          : p.id === "gem-pack"
-                            ? "gem"
-                            : p.id === "warlord"
-                              ? "crown"
-                              : "box-open"
-                    }
-                    size={26}
-                    color={p.color}
-                  />
+                <View
+                  style={[styles.packIcon, { backgroundColor: p.color + "22" }]}
+                >
+                  <FontAwesome5 name={p.icon} size={26} color={p.color} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.packTitleRow}>
                     <Text style={styles.packTitle}>{p.title}</Text>
                     {p.badge && (
-                      <View
-                        style={[styles.badge, { backgroundColor: p.color }]}
-                      >
+                      <View style={[styles.badge, { backgroundColor: p.color }]}>
                         <Text style={styles.badgeText}>{p.badge}</Text>
                       </View>
                     )}
@@ -208,6 +263,43 @@ export default function ShopScreen() {
               </LinearGradient>
             </Pressable>
           ))}
+
+        {tab === "ads" && (
+          <>
+            <View style={styles.adInfo}>
+              <FontAwesome5 name="play-circle" size={18} color={game.gold} />
+              <Text style={styles.adInfoText}>
+                Assista um anúncio curto e receba a recompensa
+              </Text>
+            </View>
+            {REWARDED_ADS.map((ad) => (
+              <Pressable
+                key={ad.id}
+                onPress={() => setAdShowing(ad)}
+                style={({ pressed }) => [
+                  styles.adCard,
+                  { borderColor: ad.color + "55", opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <View style={[styles.packIcon, { backgroundColor: ad.color + "22" }]}>
+                  <FontAwesome5 name="play" size={22} color={ad.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.packTitle}>Anúncio Premiado</Text>
+                  <Text style={styles.packDesc}>
+                    Ganhe {ad.reward} {ad.label.toLowerCase()}
+                  </Text>
+                </View>
+                <View style={[styles.adReward, { backgroundColor: ad.color + "22" }]}>
+                  <FontAwesome5 name={ad.icon} size={11} color={ad.color} />
+                  <Text style={[styles.priceText, { color: ad.color }]}>
+                    +{ad.reward}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </>
+        )}
 
         {tab === "skins" && (
           <View style={styles.skinGrid}>
@@ -243,9 +335,7 @@ export default function ShopScreen() {
                       <Text
                         style={[
                           styles.skinActionText,
-                          {
-                            color: selected ? game.bgDeep : game.text,
-                          },
+                          { color: selected ? game.bgDeep : game.text },
                         ]}
                       >
                         {selected ? "EQUIPADO" : "USAR"}
@@ -267,6 +357,40 @@ export default function ShopScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={!!adShowing} transparent animationType="fade">
+        <View style={styles.adModal}>
+          <View style={styles.adBox}>
+            <Text style={styles.adTitle}>ANÚNCIO PATROCINADO</Text>
+            <View style={styles.adVideo}>
+              <FontAwesome5 name="ad" size={64} color={game.gold} />
+              <Text style={styles.adVideoText}>Empire Clash</Text>
+              <Text style={styles.adVideoSubtext}>
+                Anúncios reais via AdMob na versão Play Store
+              </Text>
+            </View>
+            <View style={styles.adProgressBar}>
+              <View
+                style={[
+                  styles.adProgressFill,
+                  { width: `${adProgress * 100}%` },
+                ]}
+              />
+            </View>
+            <Text style={styles.adWait}>
+              {adShowing
+                ? `Aguarde ${Math.max(0, Math.ceil(4 - adProgress * 4))}s para receber recompensa`
+                : ""}
+            </Text>
+            <Pressable
+              onPress={() => setAdShowing(null)}
+              style={styles.adClose}
+            >
+              <Text style={styles.adCloseText}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -277,7 +401,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 14,
     paddingTop: 12,
-    gap: 10,
+    gap: 8,
   },
   tab: {
     flex: 1,
@@ -295,7 +419,7 @@ const styles = StyleSheet.create({
   tabText: {
     color: game.textDim,
     fontFamily: "Inter_700Bold",
-    fontSize: 12,
+    fontSize: 11,
     letterSpacing: 1.5,
   },
   tabTextActive: { color: game.gold },
@@ -357,6 +481,39 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 13,
   },
+  adInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    backgroundColor: game.gold + "15",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: game.gold + "44",
+  },
+  adInfoText: {
+    color: game.text,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    flex: 1,
+  },
+  adCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: game.surface,
+    borderWidth: 1,
+  },
+  adReward: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
   skinGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -407,5 +564,78 @@ const styles = StyleSheet.create({
     color: game.text,
     fontFamily: "Inter_700Bold",
     fontSize: 12,
+  },
+  adModal: {
+    flex: 1,
+    backgroundColor: "#000000DD",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 18,
+  },
+  adBox: {
+    width: "100%",
+    maxWidth: 360,
+    padding: 18,
+    backgroundColor: game.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: game.border,
+    gap: 14,
+  },
+  adTitle: {
+    color: game.gold,
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    letterSpacing: 2,
+    textAlign: "center",
+  },
+  adVideo: {
+    height: 180,
+    borderRadius: 14,
+    backgroundColor: game.bgDeep,
+    borderWidth: 1,
+    borderColor: game.gold + "55",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    padding: 16,
+  },
+  adVideoText: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
+    fontSize: 22,
+    letterSpacing: 2,
+  },
+  adVideoSubtext: {
+    color: game.textDim,
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    textAlign: "center",
+  },
+  adProgressBar: {
+    height: 6,
+    backgroundColor: game.bgDeep,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  adProgressFill: {
+    height: "100%",
+    backgroundColor: game.gold,
+  },
+  adWait: {
+    color: game.textDim,
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  adClose: {
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  adCloseText: {
+    color: game.muted,
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+    letterSpacing: 1,
   },
 });

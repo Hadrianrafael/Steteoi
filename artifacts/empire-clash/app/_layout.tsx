@@ -35,19 +35,23 @@ function RootLayoutNav() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="play" options={{ headerShown: false }} />
       <Stack.Screen
         name="game"
         options={{ headerShown: false, animation: "fade" }}
       />
       <Stack.Screen
         name="result"
-        options={{ headerShown: false, animation: "fade", presentation: "transparentModal" }}
+        options={{
+          headerShown: false,
+          animation: "fade",
+          presentation: "transparentModal",
+        }}
       />
       <Stack.Screen name="shop" options={{ title: "Loja" }} />
-      <Stack.Screen name="inventory" options={{ title: "Inventário" }} />
+      <Stack.Screen name="planes" options={{ title: "Aviões" }} />
+      <Stack.Screen name="upgrades" options={{ title: "Melhorias" }} />
+      <Stack.Screen name="skills" options={{ title: "Habilidades" }} />
       <Stack.Screen name="ranking" options={{ title: "Ranking" }} />
-      <Stack.Screen name="events" options={{ title: "Eventos" }} />
       <Stack.Screen
         name="settings"
         options={{ title: "Configurações", presentation: "modal" }}

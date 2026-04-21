@@ -1,116 +1,84 @@
 export type Territory = {
   id: string;
   name: string;
+  flag: string;
   x: number;
   y: number;
+  isIsland?: boolean;
   adj: string[];
 };
 
 export type GameMap = {
   id: string;
   name: string;
-  flag: string;
   width: number;
   height: number;
   territories: Territory[];
-  unlocked: boolean;
 };
 
-export const MAPS: GameMap[] = [
-  {
-    id: "usa",
-    name: "Estados Unidos",
-    flag: "US",
-    width: 360,
-    height: 240,
-    unlocked: true,
-    territories: [
-      { id: "ca", name: "California", x: 50, y: 130, adj: ["nv", "az"] },
-      { id: "nv", name: "Nevada", x: 80, y: 110, adj: ["ca", "az", "co"] },
-      { id: "az", name: "Arizona", x: 95, y: 165, adj: ["ca", "nv", "tx"] },
-      { id: "co", name: "Colorado", x: 130, y: 110, adj: ["nv", "tx", "il"] },
-      { id: "tx", name: "Texas", x: 165, y: 185, adj: ["az", "co", "fl"] },
-      { id: "il", name: "Illinois", x: 200, y: 90, adj: ["co", "ny", "fl"] },
-      { id: "fl", name: "Florida", x: 245, y: 195, adj: ["tx", "il", "ny"] },
-      { id: "ny", name: "New York", x: 280, y: 80, adj: ["il", "fl"] },
-    ],
-  },
-  {
-    id: "br",
-    name: "Brasil",
-    flag: "BR",
-    width: 360,
-    height: 240,
-    unlocked: true,
-    territories: [
-      { id: "am", name: "Amazonas", x: 90, y: 80, adj: ["pa", "mt"] },
-      { id: "pa", name: "Pará", x: 165, y: 75, adj: ["am", "ma", "mt"] },
-      { id: "ma", name: "Maranhão", x: 220, y: 80, adj: ["pa", "ce", "ba"] },
-      { id: "ce", name: "Ceará", x: 270, y: 70, adj: ["ma", "ba"] },
-      { id: "mt", name: "Mato Grosso", x: 130, y: 140, adj: ["am", "pa", "go"] },
-      { id: "go", name: "Goiás", x: 180, y: 145, adj: ["mt", "ba", "sp"] },
-      { id: "ba", name: "Bahia", x: 240, y: 140, adj: ["ma", "ce", "go", "mg"] },
-      { id: "mg", name: "Minas Gerais", x: 220, y: 185, adj: ["ba", "sp", "rj"] },
-      { id: "sp", name: "São Paulo", x: 175, y: 200, adj: ["go", "mg", "rs"] },
-      { id: "rj", name: "Rio de Janeiro", x: 250, y: 200, adj: ["mg"] },
-      { id: "rs", name: "Rio Grande", x: 145, y: 220, adj: ["sp"] },
-    ],
-  },
-  {
-    id: "eu",
-    name: "Europa",
-    flag: "EU",
-    width: 360,
-    height: 240,
-    unlocked: false,
-    territories: [
-      { id: "uk", name: "Reino Unido", x: 80, y: 70, adj: ["fr", "de"] },
-      { id: "fr", name: "França", x: 110, y: 130, adj: ["uk", "de", "es", "it"] },
-      { id: "es", name: "Espanha", x: 75, y: 175, adj: ["fr", "it"] },
-      { id: "de", name: "Alemanha", x: 165, y: 100, adj: ["uk", "fr", "pl", "it"] },
-      { id: "it", name: "Itália", x: 165, y: 165, adj: ["fr", "es", "de", "gr"] },
-      { id: "pl", name: "Polônia", x: 215, y: 95, adj: ["de", "ua", "ro"] },
-      { id: "ua", name: "Ucrânia", x: 275, y: 100, adj: ["pl", "ro", "ru"] },
-      { id: "ro", name: "Romênia", x: 240, y: 145, adj: ["pl", "ua", "gr"] },
-      { id: "gr", name: "Grécia", x: 215, y: 195, adj: ["it", "ro"] },
-      { id: "ru", name: "Rússia", x: 320, y: 80, adj: ["ua"] },
-    ],
-  },
-  {
-    id: "world",
-    name: "Mundo",
-    flag: "WW",
-    width: 360,
-    height: 240,
-    unlocked: false,
-    territories: [
-      { id: "na", name: "América do N.", x: 65, y: 90, adj: ["sa", "eu"] },
-      { id: "sa", name: "América do S.", x: 100, y: 180, adj: ["na", "af"] },
-      { id: "eu", name: "Europa", x: 175, y: 80, adj: ["na", "af", "as", "me"] },
-      { id: "af", name: "África", x: 180, y: 170, adj: ["sa", "eu", "me"] },
-      { id: "me", name: "Oriente Médio", x: 220, y: 130, adj: ["eu", "af", "as"] },
-      { id: "as", name: "Ásia", x: 280, y: 90, adj: ["eu", "me", "oc"] },
-      { id: "oc", name: "Oceania", x: 310, y: 195, adj: ["as"] },
-    ],
-  },
-  {
-    id: "neo",
-    name: "Neo Tokyo 2099",
-    flag: "FT",
-    width: 360,
-    height: 240,
-    unlocked: false,
-    territories: [
-      { id: "n1", name: "Setor Alpha", x: 70, y: 80, adj: ["n2", "n3"] },
-      { id: "n2", name: "Setor Beta", x: 160, y: 60, adj: ["n1", "n4"] },
-      { id: "n3", name: "Setor Gamma", x: 90, y: 170, adj: ["n1", "n5"] },
-      { id: "n4", name: "Setor Delta", x: 250, y: 90, adj: ["n2", "n6"] },
-      { id: "n5", name: "Setor Eta", x: 180, y: 180, adj: ["n3", "n4", "n6"] },
-      { id: "n6", name: "Núcleo", x: 290, y: 180, adj: ["n4", "n5"] },
-    ],
-  },
-];
+// World map laid out on a 720 x 360 canvas (equirectangular-ish projection)
+export const WORLD_MAP: GameMap = {
+  id: "world",
+  name: "Mundo",
+  width: 720,
+  height: 360,
+  territories: [
+    // North America
+    { id: "us", name: "EUA", flag: "🇺🇸", x: 130, y: 130, adj: ["ca", "mx", "cu"] },
+    { id: "ca", name: "Canadá", flag: "🇨🇦", x: 140, y: 75, adj: ["us", "gl"] },
+    { id: "mx", name: "México", flag: "🇲🇽", x: 130, y: 175, adj: ["us", "co", "cu"] },
+    { id: "gl", name: "Groenlândia", flag: "🇬🇱", x: 245, y: 50, isIsland: true, adj: ["ca", "uk"] },
+    { id: "cu", name: "Cuba", flag: "🇨🇺", x: 175, y: 170, isIsland: true, adj: ["us", "mx", "co"] },
+    { id: "hi", name: "Havaí", flag: "🇺🇸", x: 50, y: 175, isIsland: true, adj: [] },
 
-export function getMap(id: string): GameMap {
-  return MAPS.find((m) => m.id === id) ?? MAPS[0]!;
+    // South America
+    { id: "co", name: "Colômbia", flag: "🇨🇴", x: 175, y: 215, adj: ["mx", "br", "pe"] },
+    { id: "br", name: "Brasil", flag: "🇧🇷", x: 220, y: 250, adj: ["co", "pe", "ar"] },
+    { id: "pe", name: "Peru", flag: "🇵🇪", x: 175, y: 260, adj: ["co", "br", "ar"] },
+    { id: "ar", name: "Argentina", flag: "🇦🇷", x: 195, y: 305, adj: ["br", "pe"] },
+
+    // Europe
+    { id: "uk", name: "Reino Unido", flag: "🇬🇧", x: 320, y: 105, isIsland: true, adj: ["gl", "fr", "se"] },
+    { id: "fr", name: "França", flag: "🇫🇷", x: 340, y: 130, adj: ["uk", "es", "de", "it"] },
+    { id: "es", name: "Espanha", flag: "🇪🇸", x: 320, y: 150, adj: ["fr", "ma", "it"] },
+    { id: "de", name: "Alemanha", flag: "🇩🇪", x: 365, y: 110, adj: ["fr", "uk", "se", "it", "ru"] },
+    { id: "it", name: "Itália", flag: "🇮🇹", x: 365, y: 150, adj: ["fr", "es", "de", "tr"] },
+    { id: "se", name: "Suécia", flag: "🇸🇪", x: 380, y: 75, adj: ["uk", "de", "ru"] },
+    { id: "ru", name: "Rússia", flag: "🇷🇺", x: 470, y: 90, adj: ["se", "de", "tr", "cn", "kr"] },
+    { id: "tr", name: "Turquia", flag: "🇹🇷", x: 410, y: 150, adj: ["it", "ru", "sa", "eg"] },
+
+    // Africa
+    { id: "ma", name: "Marrocos", flag: "🇲🇦", x: 335, y: 180, adj: ["es", "ng", "eg"] },
+    { id: "eg", name: "Egito", flag: "🇪🇬", x: 410, y: 185, adj: ["tr", "ma", "ng", "sa"] },
+    { id: "ng", name: "Nigéria", flag: "🇳🇬", x: 365, y: 230, adj: ["ma", "eg", "za"] },
+    { id: "za", name: "África do Sul", flag: "🇿🇦", x: 400, y: 295, adj: ["ng", "mg"] },
+    { id: "mg", name: "Madagascar", flag: "🇲🇬", x: 460, y: 285, isIsland: true, adj: ["za"] },
+
+    // Middle East
+    { id: "sa", name: "Arábia Saudita", flag: "🇸🇦", x: 450, y: 195, adj: ["tr", "eg", "in"] },
+
+    // Asia
+    { id: "in", name: "Índia", flag: "🇮🇳", x: 510, y: 200, adj: ["sa", "cn", "id"] },
+    { id: "cn", name: "China", flag: "🇨🇳", x: 555, y: 160, adj: ["ru", "in", "kr", "jp", "id", "ph"] },
+    { id: "kr", name: "Coreia", flag: "🇰🇷", x: 605, y: 145, adj: ["cn", "ru", "jp"] },
+    { id: "jp", name: "Japão", flag: "🇯🇵", x: 635, y: 140, isIsland: true, adj: ["kr", "cn", "ph"] },
+    { id: "id", name: "Indonésia", flag: "🇮🇩", x: 590, y: 245, isIsland: true, adj: ["in", "cn", "ph", "au"] },
+    { id: "ph", name: "Filipinas", flag: "🇵🇭", x: 615, y: 215, isIsland: true, adj: ["cn", "jp", "id"] },
+
+    // Oceania
+    { id: "au", name: "Austrália", flag: "🇦🇺", x: 615, y: 295, adj: ["id", "nz"] },
+    { id: "nz", name: "Nova Zelândia", flag: "🇳🇿", x: 670, y: 320, isIsland: true, adj: ["au"] },
+  ],
+};
+
+export function getMap(): GameMap {
+  return WORLD_MAP;
 }
+
+export function distance(a: Territory, b: Territory): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+export const ADJACENT_DIST = 80;

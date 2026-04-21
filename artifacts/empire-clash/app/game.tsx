@@ -1,8 +1,14 @@
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
   Easing,
@@ -19,81 +25,121 @@ import Svg, {
   Defs,
   G,
   Line,
+  LinearGradient as SvgLinearGradient,
+  Path,
   RadialGradient,
+  Rect,
   Stop,
-  Text as SvgText,
 } from "react-native-svg";
 
+import { Plane } from "@/components/Plane";
 import { game } from "@/constants/colors";
+import { useGame } from "@/contexts/GameContext";
 import {
   MAX_TROOPS,
   Owner,
   PLAYER_COLORS,
   PLAYER_NAMES,
   TROOP_INTERVAL_MS,
-  aiMove,
-  attack,
+  chooseAiAction,
   checkWinner,
   createGame,
+  resolveAttack,
   tickTroops,
   type GameState,
 } from "@/lib/gameEngine";
-import { getMap } from "@/lib/maps";
+import { ADJACENT_DIST, distance, getMap } from "@/lib/maps";
+
+type Flight = {
+  id: string;
+  fromId: string;
+  toId: string;
+  sending: number;
+  owner: Owner;
+  attackBonus: number;
+  duration: number;
+};
+
+const NUM_PLAYERS = 4;
+
+const PLANE_BASE_DURATION = 1300;
 
 export default function GameScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{
-    mapId?: string;
-    mode?: string;
-    players?: string;
-  }>();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const { profile, useSkill } = useGame();
 
-  const map = useMemo(() => getMap(params.mapId ?? "usa"), [params.mapId]);
-  const numPlayers = Math.max(
-    2,
-    Math.min(5, parseInt(params.players ?? "2", 10) || 2),
-  );
+  const map = useMemo(() => getMap(), []);
 
-  const [state, setState] = useState<GameState>(() =>
-    createGame(map, numPlayers),
-  );
+  const [state, setState] = useState<GameState>(() => {
+    const s = createGame(map, NUM_PLAYERS);
+    // Apply starting troops upgrade for player
+    const bonus = profile.upgStart;
+    if (bonus > 0) {
+      const newStates = { ...s.states };
+      for (const id in newStates) {
+        if (newStates[id]!.owner === "player") {
+          newStates[id] = {
+            ...newStates[id]!,
+            troops: newStates[id]!.troops + bonus,
+          };
+        }
+      }
+      return { ...s, states: newStates };
+    }
+    return s;
+  });
   const [selected, setSelected] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [shieldActive, setShieldActive] = useState(false);
+  const [explosions, setExplosions] = useState<
+    { id: string; x: number; y: number }[]
+  >([]);
+
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const pulse = useRef(new Animated.Value(0)).current;
+  // Layout
+  const mapAreaH = height - insets.top - insets.bottom - 200;
+  const svgWidth = Math.min(width - 16, 720);
+  const svgHeight = Math.min(mapAreaH, (svgWidth * map.height) / map.width);
+  const scaleX = svgWidth / map.width;
+  const scaleY = svgHeight / map.height;
 
-  // Pulse animation for selected territory
+  // Water animation
+  const water = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (selected) {
-      Animated.loop(
-        Animated.timing(pulse, {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(water, {
           toValue: 1,
-          duration: 1100,
-          easing: Easing.linear,
-          useNativeDriver: true,
+          duration: 4000,
+          useNativeDriver: false,
+          easing: Easing.inOut(Easing.sin),
         }),
-      ).start();
-    } else {
-      pulse.setValue(0);
-      pulse.stopAnimation();
-    }
-  }, [selected, pulse]);
+        Animated.timing(water, {
+          toValue: 0,
+          duration: 4000,
+          useNativeDriver: false,
+          easing: Easing.inOut(Easing.sin),
+        }),
+      ]),
+    ).start();
+  }, [water]);
 
-  // Troop generation tick
+  // Troop generation
   useEffect(() => {
     if (paused || state.finished) return;
     const t = setInterval(() => {
-      setState((s) => tickTroops(s));
+      setState((s) => tickTroops(s, profile.upgGrowth * 0.2));
     }, TROOP_INTERVAL_MS);
     return () => clearInterval(t);
-  }, [paused, state.finished]);
+  }, [paused, state.finished, profile.upgGrowth]);
 
-  // AI tick - each AI acts on staggered intervals
+  // AI ticks
   useEffect(() => {
     if (paused || state.finished) return;
     const intervals: ReturnType<typeof setInterval>[] = [];
@@ -102,17 +148,18 @@ export default function GameScreen() {
       .forEach((ai, idx) => {
         const interval = setInterval(
           () => {
-            setState((s) => {
-              if (s.finished) return s;
-              return aiMove(s, ai);
-            });
+            const s = stateRef.current;
+            if (s.finished) return;
+            const action = chooseAiAction(s, ai);
+            if (!action) return;
+            launchAttack(action.fromId, action.toId, action.sending, ai, 0, action.isPlane);
           },
-          2200 + idx * 600 + Math.random() * 400,
+          2400 + idx * 800,
         );
         intervals.push(interval);
       });
     return () => intervals.forEach(clearInterval);
-  }, [paused, state.finished, state.players]);
+  }, [paused, state.finished, state.players]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Win check
   useEffect(() => {
@@ -121,20 +168,145 @@ export default function GameScreen() {
     if (w) {
       setState((s) => ({ ...s, finished: true, winner: w }));
       setTimeout(() => {
-        router.replace(
-          `/result?winner=${w}&mapId=${map.id}` as never,
-        );
+        router.replace(`/result?winner=${w}` as never);
       }, 700);
     }
-  }, [state, map.id, router]);
+  }, [state, router]);
 
   const showToast = (msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 1500);
+    setTimeout(() => setToast(null), 1300);
   };
 
+  const addExplosion = useCallback((x: number, y: number) => {
+    const id = `${Date.now()}-${Math.random()}`;
+    setExplosions((arr) => [...arr, { id, x, y }]);
+    setTimeout(() => {
+      setExplosions((arr) => arr.filter((e) => e.id !== id));
+    }, 700);
+  }, []);
+
+  const applyAttack = useCallback(
+    (
+      fromId: string,
+      toId: string,
+      sending: number,
+      owner: Owner,
+      attackBonus: number,
+      restoreSending: boolean,
+    ) => {
+      setState((s) => {
+        const fromState = s.states[fromId];
+        if (!fromState || fromState.owner !== owner) return s;
+        const toState = s.states[toId];
+        if (!toState) return s;
+        // For plane flights we pre-deducted troops; restore them so resolveAttack can deduct cleanly
+        const baseState = restoreSending
+          ? {
+              ...s,
+              states: {
+                ...s.states,
+                [fromId]: {
+                  ...fromState,
+                  troops: Math.min(MAX_TROOPS, fromState.troops + sending),
+                },
+              },
+            }
+          : s;
+        let bonus = attackBonus;
+        if (toState.owner === "player" && shieldActive && owner !== "player") {
+          bonus -= 0.15;
+        }
+        const actualSending = Math.min(
+          sending,
+          baseState.states[fromId]!.troops - 1,
+        );
+        if (actualSending < 1) return baseState;
+        const out = resolveAttack(baseState, fromId, toId, actualSending, bonus);
+        if (out.conquered) {
+          const t = s.map.territories.find((x) => x.id === toId)!;
+          addExplosion(t.x * scaleX, t.y * scaleY);
+        }
+        return out.state;
+      });
+    },
+    [addExplosion, scaleX, scaleY, shieldActive],
+  );
+
+  const resolveFlight = useCallback(
+    (flight: Flight) => {
+      applyAttack(
+        flight.fromId,
+        flight.toId,
+        flight.sending,
+        flight.owner,
+        flight.attackBonus,
+        true,
+      );
+      setFlights((f) => f.filter((x) => x.id !== flight.id));
+    },
+    [applyAttack],
+  );
+
+  const launchAttack = useCallback(
+    (
+      fromId: string,
+      toId: string,
+      sending: number,
+      owner: Owner,
+      attackBonus: number,
+      isPlane: boolean,
+    ) => {
+      const s = stateRef.current;
+      const fromState = s.states[fromId];
+      if (!fromState || fromState.owner !== owner || fromState.troops < 2) return;
+      const actualSending = Math.min(sending, fromState.troops - 1);
+      if (actualSending < 1) return;
+
+      if (!isPlane) {
+        applyAttack(fromId, toId, actualSending, owner, attackBonus, false);
+        return;
+      }
+
+      // Plane: pre-deduct troops so they "leave" the source visually
+      setState((cur) => {
+        const cs = cur.states[fromId];
+        if (!cs || cs.owner !== owner) return cur;
+        return {
+          ...cur,
+          states: {
+            ...cur.states,
+            [fromId]: {
+              ...cs,
+              troops: Math.max(0, cs.troops - actualSending),
+            },
+          },
+        };
+      });
+
+      const planeSpeedMs = Math.max(
+        500,
+        PLANE_BASE_DURATION -
+          profile.upgPlaneSpeed * 100 -
+          (profile.planeTier - 1) * 250,
+      );
+
+      const flight: Flight = {
+        id: `${Date.now()}-${Math.random()}`,
+        fromId,
+        toId,
+        sending: actualSending,
+        owner,
+        attackBonus,
+        duration: planeSpeedMs,
+      };
+      setFlights((f) => [...f, flight]);
+    },
+    [applyAttack, profile.planeTier, profile.upgPlaneSpeed],
+  );
+
   const onTapTerritory = (id: string) => {
-    if (state.finished) return;
+    if (state.finished || paused) return;
     const ts = state.states[id]!;
     if (Platform.OS !== "web") {
       Haptics.selectionAsync().catch(() => {});
@@ -155,26 +327,80 @@ export default function GameScreen() {
       setSelected(null);
       return;
     }
-    const result = attack(state, selected, id);
-    if (!result.success) {
-      showToast(result.message);
-      // Try changing selection if tapped own territory
-      if (ts.owner === "player" && ts.troops >= 2) {
-        setSelected(id);
-      }
+    const fromT = map.territories.find((t) => t.id === selected)!;
+    const toT = map.territories.find((t) => t.id === id)!;
+    const fromState = state.states[selected]!;
+    if (fromState.troops < 2) {
+      showToast("Sem tropas");
+      setSelected(null);
       return;
     }
-    setState(result.state);
+    const sending = Math.floor(fromState.troops * 0.7);
+    const isPlane = distance(fromT, toT) > ADJACENT_DIST;
+    const attackBonus = profile.upgAttack * 0.03;
+
+    launchAttack(selected, id, sending, "player", attackBonus, isPlane);
     setSelected(null);
-    showToast(result.message);
-    if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }
+    showToast(isPlane ? `Avião enviado: ${sending}` : `Ataque: ${sending}`);
   };
 
-  // Compute territory counts per owner
+  // Skill buttons
+  const triggerNuke = () => {
+    if (!useSkill("skillNuke")) {
+      showToast("Sem cargas de bomba");
+      return;
+    }
+    // Reduce all enemy territories by half
+    setState((s) => {
+      const newStates = { ...s.states };
+      for (const id in newStates) {
+        const t = newStates[id]!;
+        if (t.owner !== "player" && t.owner !== "neutral") {
+          newStates[id] = {
+            ...t,
+            troops: Math.max(1, Math.floor(t.troops / 2)),
+          };
+          const tt = s.map.territories.find((x) => x.id === id)!;
+          addExplosion(tt.x * scaleX, tt.y * scaleY);
+        }
+      }
+      return { ...s, states: newStates };
+    });
+    showToast("BOMBA ATIVADA!");
+  };
+
+  const triggerRally = () => {
+    if (!useSkill("skillRally")) {
+      showToast("Sem cargas de reforço");
+      return;
+    }
+    setState((s) => {
+      const newStates = { ...s.states };
+      for (const id in newStates) {
+        const t = newStates[id]!;
+        if (t.owner === "player") {
+          newStates[id] = {
+            ...t,
+            troops: Math.min(MAX_TROOPS, t.troops + 5),
+          };
+        }
+      }
+      return { ...s, states: newStates };
+    });
+    showToast("Reforços +5!");
+  };
+
+  const triggerShield = () => {
+    if (!useSkill("skillShield")) {
+      showToast("Sem escudos");
+      return;
+    }
+    setShieldActive(true);
+    showToast("Escudo ativo (8s)");
+    setTimeout(() => setShieldActive(false), 8000);
+  };
+
+  // Counts per owner
   const counts = useMemo(() => {
     const c: Partial<Record<Owner, number>> = {};
     for (const id in state.states) {
@@ -184,16 +410,9 @@ export default function GameScreen() {
     return c;
   }, [state]);
 
-  const svgWidth = Math.min(width - 24, 520);
-  const svgHeight = (svgWidth * map.height) / map.width;
-
-  const pulseScale = pulse.interpolate({
+  const waterFill = water.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.4],
-  });
-  const pulseOpacity = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.7, 0],
+    outputRange: ["#0F1F4A", "#13256A"],
   });
 
   return (
@@ -208,14 +427,17 @@ export default function GameScreen() {
           <Feather name={paused ? "play" : "pause"} size={18} color={game.text} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.mapTitle}>{map.name}</Text>
-          <Text style={styles.mapMeta}>
-            {Object.keys(state.players).length} jogadores
-          </Text>
+          <Text style={styles.mapTitle}>{map.name.toUpperCase()}</Text>
+          {shieldActive && (
+            <View style={styles.shieldTag}>
+              <FontAwesome5 name="shield-alt" size={10} color={game.gem} />
+              <Text style={styles.shieldText}>ESCUDO</Text>
+            </View>
+          )}
         </View>
         <Pressable
           style={styles.iconBtn}
-          onPress={() => router.back()}
+          onPress={() => router.replace("/")}
           hitSlop={10}
         >
           <Feather name="x" size={20} color={game.text} />
@@ -248,9 +470,15 @@ export default function GameScreen() {
 
       {/* Map */}
       <View style={styles.mapWrap}>
-        <LinearGradient
-          colors={[game.surfaceElevated, game.bgDeep]}
-          style={styles.mapBg}
+        <Animated.View
+          style={[
+            styles.mapBg,
+            {
+              width: svgWidth + 24,
+              height: svgHeight + 24,
+              backgroundColor: waterFill,
+            },
+          ]}
         >
           <Svg
             width={svgWidth}
@@ -259,23 +487,39 @@ export default function GameScreen() {
           >
             <Defs>
               <RadialGradient id="bgglow" cx="50%" cy="50%" r="60%">
-                <Stop offset="0%" stopColor={game.purple} stopOpacity="0.25" />
+                <Stop offset="0%" stopColor={game.purple} stopOpacity="0.18" />
                 <Stop offset="100%" stopColor={game.bg} stopOpacity="0" />
               </RadialGradient>
+              <SvgLinearGradient id="continent" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor="#2D3D6E" stopOpacity="0.55" />
+                <Stop offset="100%" stopColor="#1A244A" stopOpacity="0.55" />
+              </SvgLinearGradient>
             </Defs>
-            <Circle
-              cx={map.width / 2}
-              cy={map.height / 2}
-              r={map.width / 2}
-              fill="url(#bgglow)"
+
+            {/* Continent silhouettes (decorative) */}
+            <Path
+              d="M70,60 Q120,40 170,75 Q200,110 175,170 Q150,230 195,300 Q160,330 130,290 Q90,250 80,180 Q60,120 70,60 Z"
+              fill="url(#continent)"
             />
+            <Path
+              d="M300,55 Q400,40 470,80 Q540,75 580,120 Q620,150 600,200 Q570,180 530,200 Q480,180 440,200 Q380,180 340,200 Q300,170 290,120 Q280,80 300,55 Z"
+              fill="url(#continent)"
+            />
+            <Path
+              d="M340,200 Q420,210 430,260 Q420,310 390,320 Q350,310 340,260 Q330,220 340,200 Z"
+              fill="url(#continent)"
+            />
+            <Path
+              d="M580,260 Q640,260 660,295 Q650,330 600,320 Q570,300 580,260 Z"
+              fill="url(#continent)"
+            />
+            <Circle cx={map.width / 2} cy={map.height / 2} r={map.width / 2.2} fill="url(#bgglow)" />
+
             {/* Adjacency lines */}
             {map.territories.map((t) =>
               t.adj.map((adjId) => {
                 const o = map.territories.find((x) => x.id === adjId);
                 if (!o || adjId < t.id) return null;
-                const isAttackable =
-                  selected === t.id || selected === adjId;
                 return (
                   <Line
                     key={`${t.id}-${adjId}`}
@@ -283,68 +527,74 @@ export default function GameScreen() {
                     y1={t.y}
                     x2={o.x}
                     y2={o.y}
-                    stroke={isAttackable ? game.gold : game.border}
-                    strokeWidth={isAttackable ? 1.6 : 1}
-                    strokeDasharray={isAttackable ? undefined : "3,3"}
-                    opacity={isAttackable ? 1 : 0.6}
+                    stroke={game.border}
+                    strokeWidth={0.8}
+                    strokeDasharray="2,3"
+                    opacity={0.5}
                   />
                 );
               }),
             )}
-            {/* Territories */}
+
+            {/* Territory base circles (color = owner) */}
             {map.territories.map((t) => {
               const ts = state.states[t.id]!;
               const color = PLAYER_COLORS[ts.owner];
               const isSelected = selected === t.id;
-              const fromTerr = selected
-                ? map.territories.find((x) => x.id === selected)
-                : null;
-              const isTarget =
-                fromTerr != null &&
-                fromTerr.adj.includes(t.id) &&
-                t.id !== selected;
+              const fromT = selected ? map.territories.find((x) => x.id === selected) : null;
+              const isTarget = fromT != null && t.id !== selected;
+              const dist = fromT ? distance(fromT, t) : 0;
+              const targetIsPlane = fromT && dist > ADJACENT_DIST;
               return (
                 <G key={t.id}>
                   {isSelected && (
                     <Circle
                       cx={t.x}
                       cy={t.y}
-                      r={14}
+                      r={20}
                       fill="none"
                       stroke={game.gold}
-                      strokeWidth={2}
+                      strokeWidth={1.5}
+                      strokeDasharray="3,3"
                       opacity={0.9}
                     />
                   )}
                   <Circle
                     cx={t.x}
                     cy={t.y}
-                    r={11}
+                    r={t.isIsland ? 13 : 16}
                     fill={color}
-                    stroke={isTarget ? game.gold : game.text}
-                    strokeWidth={isTarget ? 2 : 1.2}
-                    opacity={ts.owner === "neutral" ? 0.7 : 1}
+                    stroke={
+                      isTarget ? (targetIsPlane ? game.gem : game.gold) : game.text
+                    }
+                    strokeWidth={isTarget ? 1.5 : 1}
+                    opacity={ts.owner === "neutral" ? 0.65 : 0.95}
                   />
-                  <SvgText
-                    x={t.x}
-                    y={t.y + 3.6}
-                    fill={ts.owner === "neutral" ? game.textDim : game.text}
-                    fontSize={10}
-                    fontWeight="bold"
-                    textAnchor="middle"
-                  >
-                    {ts.troops}
-                  </SvgText>
+                  {t.isIsland && (
+                    <Circle
+                      cx={t.x}
+                      cy={t.y}
+                      r={17}
+                      fill="none"
+                      stroke={game.gem}
+                      strokeWidth={0.8}
+                      strokeDasharray="2,2"
+                      opacity={0.7}
+                    />
+                  )}
                 </G>
               );
             })}
           </Svg>
 
-          {/* Touch overlay (positioned absolutely above SVG) */}
-          <View style={[styles.touchLayer, { width: svgWidth, height: svgHeight }]}>
+          {/* Touch + flag overlay */}
+          <View
+            style={[styles.touchLayer, { width: svgWidth, height: svgHeight }]}
+          >
             {map.territories.map((t) => {
-              const cx = (t.x / map.width) * svgWidth;
-              const cy = (t.y / map.height) * svgHeight;
+              const ts = state.states[t.id]!;
+              const cx = t.x * scaleX;
+              const cy = t.y * scaleY;
               const r = 22;
               return (
                 <Pressable
@@ -356,61 +606,73 @@ export default function GameScreen() {
                     top: cy - r,
                     width: r * 2,
                     height: r * 2,
-                    borderRadius: r,
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
+                >
+                  <Text style={styles.flagText}>{t.flag}</Text>
+                  <View style={styles.troopBadge}>
+                    <Text style={styles.troopText}>{ts.troops}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+
+            {/* Plane flights */}
+            {flights.map((f) => {
+              const fromT = map.territories.find((t) => t.id === f.fromId)!;
+              const toT = map.territories.find((t) => t.id === f.toId)!;
+              return (
+                <Plane
+                  key={f.id}
+                  fromX={fromT.x * scaleX}
+                  fromY={fromT.y * scaleY}
+                  toX={toT.x * scaleX}
+                  toY={toT.y * scaleY}
+                  duration={f.duration}
+                  color={PLAYER_COLORS[f.owner]}
+                  troops={f.sending}
+                  onDone={() => resolveFlight(f)}
                 />
               );
             })}
-            {/* Selected pulse animation overlay */}
-            {selected &&
-              (() => {
-                const t = map.territories.find((x) => x.id === selected)!;
-                const cx = (t.x / map.width) * svgWidth;
-                const cy = (t.y / map.height) * svgHeight;
-                return (
-                  <Animated.View
-                    pointerEvents="none"
-                    style={{
-                      position: "absolute",
-                      left: cx - 22,
-                      top: cy - 22,
-                      width: 44,
-                      height: 44,
-                      borderRadius: 22,
-                      borderWidth: 2,
-                      borderColor: game.gold,
-                      transform: [{ scale: pulseScale }],
-                      opacity: pulseOpacity,
-                    }}
-                  />
-                );
-              })()}
+
+            {/* Explosions */}
+            {explosions.map((e) => (
+              <Explosion key={e.id} x={e.x} y={e.y} />
+            ))}
           </View>
-        </LinearGradient>
+        </Animated.View>
       </View>
 
-      {/* Hint */}
-      <View style={styles.hintBox}>
-        {selected ? (
-          <Text style={styles.hint}>
-            Toque em um território adjacente para atacar/reforçar
-          </Text>
-        ) : (
-          <Text style={styles.hint}>
-            Toque em um território seu (vermelho) para selecionar
-          </Text>
-        )}
-        <View style={styles.legend}>
-          <FontAwesome5 name="shield-alt" size={11} color={game.gold} />
-          <Text style={styles.legendText}>
-            Tropas crescem +1 a cada {(TROOP_INTERVAL_MS / 1000).toFixed(1)}s
-            (max {MAX_TROOPS})
-          </Text>
-        </View>
+      {/* Skill bar */}
+      <View style={styles.skillBar}>
+        <SkillButton
+          icon="bomb"
+          label="BOMBA"
+          color={game.danger}
+          count={profile.skillNuke}
+          onPress={triggerNuke}
+        />
+        <SkillButton
+          icon="users"
+          label="REFORÇO"
+          color={game.success}
+          count={profile.skillRally}
+          onPress={triggerRally}
+        />
+        <SkillButton
+          icon="shield-alt"
+          label="ESCUDO"
+          color={game.gem}
+          count={profile.skillShield}
+          onPress={triggerShield}
+          disabled={shieldActive}
+        />
       </View>
 
       {toast && (
-        <View style={[styles.toast, { bottom: 24 + insets.bottom }]}>
+        <View style={[styles.toast, { bottom: 130 + insets.bottom }]}>
           <Text style={styles.toastText}>{toast}</Text>
         </View>
       )}
@@ -421,9 +683,84 @@ export default function GameScreen() {
           <Pressable style={styles.pauseBtn} onPress={() => setPaused(false)}>
             <Feather name="play" size={28} color={game.text} />
           </Pressable>
+          <Pressable
+            style={styles.exitBtn}
+            onPress={() => router.replace("/")}
+          >
+            <Text style={styles.exitText}>SAIR</Text>
+          </Pressable>
         </View>
       )}
     </View>
+  );
+}
+
+function SkillButton({
+  icon,
+  label,
+  color,
+  count,
+  onPress,
+  disabled,
+}: {
+  icon: keyof typeof FontAwesome5.glyphMap;
+  label: string;
+  color: string;
+  count: number;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const ready = count > 0 && !disabled;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!ready}
+      style={({ pressed }) => [
+        styles.skillBtn,
+        {
+          borderColor: ready ? color : game.border,
+          opacity: ready ? (pressed ? 0.7 : 1) : 0.4,
+        },
+      ]}
+    >
+      <FontAwesome5 name={icon} size={20} color={ready ? color : game.muted} />
+      <Text style={styles.skillLabel}>{label}</Text>
+      <View style={[styles.skillCount, { backgroundColor: color }]}>
+        <Text style={styles.skillCountText}>{count}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function Explosion({ x, y }: { x: number; y: number }) {
+  const t = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(t, {
+      toValue: 1,
+      duration: 700,
+      useNativeDriver: true,
+      easing: Easing.out(Easing.quad),
+    }).start();
+  }, [t]);
+  const scale = t.interpolate({ inputRange: [0, 1], outputRange: [0.4, 2.4] });
+  const opacity = t.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: x - 22,
+        top: y - 22,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: game.gold + "AA",
+        borderWidth: 2,
+        borderColor: game.primary,
+        transform: [{ scale }],
+        opacity,
+      }}
+    />
   );
 }
 
@@ -433,24 +770,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  headerCenter: { alignItems: "center" },
+  headerCenter: { alignItems: "center", flexDirection: "row", gap: 8 },
   mapTitle: {
     color: game.text,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_900Black",
     fontSize: 14,
+    letterSpacing: 2,
   },
-  mapMeta: {
-    color: game.textDim,
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
+  shieldTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: game.gem + "33",
+  },
+  shieldText: {
+    color: game.gem,
+    fontFamily: "Inter_700Bold",
+    fontSize: 10,
   },
   iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: game.surface,
     alignItems: "center",
     justifyContent: "center",
@@ -460,31 +807,31 @@ const styles = StyleSheet.create({
   playersBar: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
-    paddingHorizontal: 12,
-    marginTop: 6,
+    gap: 5,
+    paddingHorizontal: 10,
+    marginTop: 4,
     justifyContent: "center",
   },
   playerChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
     backgroundColor: game.surface,
     borderWidth: 1,
     borderColor: game.border,
   },
-  playerDot: { width: 8, height: 8, borderRadius: 4 },
+  playerDot: { width: 6, height: 6, borderRadius: 3 },
   playerChipText: {
     color: game.text,
     fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
+    fontSize: 10,
   },
   playerChipCount: {
-    color: game.textDim,
-    fontFamily: "Inter_700Bold",
+    color: game.gold,
+    fontFamily: "Inter_900Black",
     fontSize: 11,
   },
   mapWrap: {
@@ -493,39 +840,75 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapBg: {
-    borderRadius: 24,
+    borderRadius: 22,
     padding: 12,
     borderWidth: 1,
     borderColor: game.border,
-    margin: 12,
+    margin: 8,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   touchLayer: {
     position: "absolute",
     left: 12,
     top: 12,
   },
-  hintBox: {
-    paddingHorizontal: 16,
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
-  },
-  hint: {
-    color: game.text,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 13,
+  flagText: {
+    fontSize: 18,
     textAlign: "center",
   },
-  legend: {
+  troopBadge: {
+    position: "absolute",
+    bottom: -2,
+    backgroundColor: game.bgDeep,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: game.border,
+    minWidth: 18,
+    alignItems: "center",
+  },
+  troopText: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
+    fontSize: 10,
+  },
+  skillBar: {
+    flexDirection: "row",
+    paddingHorizontal: 12,
+    gap: 8,
+    paddingTop: 6,
+    paddingBottom: 4,
+  },
+  skillBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
+    padding: 10,
+    borderRadius: 14,
+    backgroundColor: game.surface,
+    borderWidth: 1.5,
   },
-  legendText: {
-    color: game.textDim,
-    fontFamily: "Inter_500Medium",
+  skillLabel: {
+    flex: 1,
+    color: game.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    letterSpacing: 0.6,
+  },
+  skillCount: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  skillCountText: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
     fontSize: 11,
   },
   toast: {
@@ -538,12 +921,13 @@ const styles = StyleSheet.create({
   },
   toastText: {
     color: game.bgDeep,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_900Black",
     fontSize: 13,
+    letterSpacing: 0.5,
   },
   pauseOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: game.bgDeep + "DD",
+    backgroundColor: game.bgDeep + "EE",
     alignItems: "center",
     justifyContent: "center",
     gap: 24,
@@ -551,7 +935,7 @@ const styles = StyleSheet.create({
   pauseTitle: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 28,
+    fontSize: 32,
     letterSpacing: 4,
   },
   pauseBtn: {
@@ -561,5 +945,17 @@ const styles = StyleSheet.create({
     backgroundColor: game.primary,
     alignItems: "center",
     justifyContent: "center",
+  },
+  exitBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: game.border,
+    borderRadius: 12,
+  },
+  exitText: {
+    color: game.textDim,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 1.4,
   },
 });

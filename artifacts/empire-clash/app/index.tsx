@@ -1,12 +1,14 @@
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Easing,
   Image,
+  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,23 +16,20 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BottomNav } from "@/components/BottomNav";
-import { MapPreview } from "@/components/MapPreview";
-import { PrimaryButton } from "@/components/PrimaryButton";
 import { TopBar } from "@/components/TopBar";
 import { game } from "@/constants/colors";
 import { useGame, xpProgress } from "@/contexts/GameContext";
-import { MAPS } from "@/lib/maps";
 
 export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { profile, claimDailyLogin } = useGame();
+  const { profile, claimDailyLogin, consumeEnergy } = useGame();
   const [reward, setReward] = useState<{
     reward: number;
     type: "coins" | "gems";
   } | null>(null);
-  const [pulse] = useState(new Animated.Value(1));
-  const [mapIndex, setMapIndex] = useState(0);
+  const pulse = useRef(new Animated.Value(1)).current;
+  const glow = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const r = claimDailyLogin();
@@ -41,24 +40,44 @@ export default function Home() {
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
-          toValue: 1.05,
+          toValue: 1.06,
           duration: 900,
           useNativeDriver: true,
+          easing: Easing.inOut(Easing.ease),
         }),
         Animated.timing(pulse, {
           toValue: 1,
           duration: 900,
           useNativeDriver: true,
+          easing: Easing.inOut(Easing.ease),
         }),
       ]),
     ).start();
-  }, [pulse]);
-
-  const visibleMaps = useMemo(() => MAPS, []);
-  const currentMap = visibleMaps[mapIndex]!;
-  const isLocked = !profile.unlockedMaps.includes(currentMap.id);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glow, {
+          toValue: 1,
+          duration: 1400,
+          useNativeDriver: false,
+        }),
+        Animated.timing(glow, {
+          toValue: 0,
+          duration: 1400,
+          useNativeDriver: false,
+        }),
+      ]),
+    ).start();
+  }, [pulse, glow]);
 
   const xpFrac = xpProgress(profile);
+
+  const handlePlay = () => {
+    if (!consumeEnergy(1)) return;
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+    }
+    router.push("/game");
+  };
 
   return (
     <View style={styles.root}>
@@ -68,19 +87,15 @@ export default function Home() {
         resizeMode="cover"
       />
       <LinearGradient
-        colors={[game.bgDeep + "E6", game.bg + "CC", game.bgDeep + "F2"]}
+        colors={[game.bgDeep + "DD", game.bg + "BB", game.bgDeep + "F2"]}
         style={StyleSheet.absoluteFillObject}
       />
 
       <TopBar />
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Player card */}
-        <View style={styles.playerCard}>
+      <View style={styles.content}>
+        {/* Profile card */}
+        <View style={styles.profileCard}>
           <View style={styles.avatarRing}>
             <LinearGradient
               colors={[game.gold, game.primary]}
@@ -90,7 +105,7 @@ export default function Home() {
             </LinearGradient>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.playerName}>{profile.name}</Text>
+            <Text style={styles.profileName}>{profile.name}</Text>
             <View style={styles.leagueRow}>
               <FontAwesome5
                 name="trophy"
@@ -108,6 +123,11 @@ export default function Home() {
               <Text style={styles.leagueText}>
                 {profile.league} · {profile.trophies}
               </Text>
+              {profile.vipActive && (
+                <View style={styles.vipBadge}>
+                  <Text style={styles.vipText}>VIP</Text>
+                </View>
+              )}
             </View>
             <View style={styles.xpBar}>
               <View
@@ -121,6 +141,13 @@ export default function Home() {
               Nível {profile.level} · {profile.xp}/{profile.level * 100} XP
             </Text>
           </View>
+          <Pressable
+            onPress={() => router.push("/settings")}
+            style={styles.settingsBtn}
+            hitSlop={10}
+          >
+            <Feather name="settings" size={18} color={game.text} />
+          </Pressable>
         </View>
 
         {reward && (
@@ -137,141 +164,78 @@ export default function Home() {
           </View>
         )}
 
-        {/* Map carousel */}
-        <View style={styles.mapHeader}>
-          <Pressable
-            onPress={() =>
-              setMapIndex(
-                (mapIndex - 1 + visibleMaps.length) % visibleMaps.length,
-              )
-            }
-            style={styles.arrowBtn}
-            hitSlop={10}
-          >
-            <Feather name="chevron-left" size={22} color={game.text} />
-          </Pressable>
-          <View style={{ alignItems: "center", flex: 1 }}>
-            <Text style={styles.mapName}>{currentMap.name.toUpperCase()}</Text>
-            <Text style={styles.mapSubtitle}>
-              {currentMap.territories.length} territórios
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => setMapIndex((mapIndex + 1) % visibleMaps.length)}
-            style={styles.arrowBtn}
-            hitSlop={10}
-          >
-            <Feather name="chevron-right" size={22} color={game.text} />
-          </Pressable>
+        {/* Title */}
+        <View style={styles.titleWrap}>
+          <Text style={styles.titleEyebrow}>BATALHA PELO</Text>
+          <Text style={styles.titleMain}>EMPIRE CLASH</Text>
+          <View style={styles.titleUnderline} />
         </View>
 
-        <View style={styles.mapFrame}>
-          <LinearGradient
-            colors={[game.surfaceElevated, game.surface]}
-            style={styles.mapInner}
-          >
-            <MapPreview map={currentMap} size={280} />
-            {isLocked && (
-              <View style={styles.lockOverlay}>
-                <FontAwesome5 name="lock" size={28} color={game.gold} />
-                <Text style={styles.lockText}>Desbloqueie em breve</Text>
-              </View>
-            )}
-          </LinearGradient>
-        </View>
-
-        {/* Play button */}
+        {/* PLAY button */}
         <Animated.View
-          style={{
-            transform: [{ scale: pulse }],
-            paddingHorizontal: 24,
-            marginTop: 18,
-          }}
+          style={[
+            styles.playWrap,
+            {
+              transform: [{ scale: pulse }],
+              shadowOpacity: glow.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.5, 1],
+              }),
+              shadowRadius: glow.interpolate({
+                inputRange: [0, 1],
+                outputRange: [12, 28],
+              }),
+            },
+          ]}
         >
-          <PrimaryButton
-            label={isLocked ? "BLOQUEADO" : "JOGAR"}
-            disabled={isLocked}
-            onPress={() => router.push(`/play?mapId=${currentMap.id}` as never)}
-            icon={
-              <FontAwesome5 name="crown" size={18} color={game.text} />
-            }
-            style={{ paddingVertical: 4 }}
-          />
+          <Pressable
+            onPress={handlePlay}
+            disabled={profile.energy < 1}
+            style={({ pressed }) => [
+              { opacity: profile.energy < 1 ? 0.5 : pressed ? 0.85 : 1 },
+            ]}
+          >
+            <LinearGradient
+              colors={[game.gold, "#FF8E2E", game.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.playBtn}
+            >
+              <FontAwesome5 name="crown" size={28} color={game.text} />
+              <Text style={styles.playLabel}>JOGAR</Text>
+              <View style={styles.playEnergyTag}>
+                <FontAwesome5 name="bolt" size={11} color={game.energy} />
+                <Text style={styles.playEnergyText}>1</Text>
+              </View>
+            </LinearGradient>
+          </Pressable>
         </Animated.View>
 
-        {/* Quick actions */}
-        <View style={styles.quickGrid}>
-          <QuickCard
-            icon="medal"
-            color={game.gold}
-            label="Passe de Temporada"
-            onPress={() => router.push("/events")}
-          />
-          <QuickCard
-            icon="bolt"
-            color={game.energy}
-            label="Eventos Semanais"
-            onPress={() => router.push("/events")}
-          />
-          <QuickCard
-            icon="users"
-            color={game.gem}
-            label="Multiplayer 1v1"
-            onPress={() => router.push(`/play?mapId=${currentMap.id}&mode=mp1v1` as never)}
-          />
-          <QuickCard
-            icon="user-friends"
-            color={game.purple}
-            label="Mesa de 5"
-            onPress={() => router.push(`/play?mapId=${currentMap.id}&mode=mp5` as never)}
-          />
-        </View>
-      </ScrollView>
+        {profile.energy < 1 && (
+          <Text style={styles.noEnergy}>
+            Sem energia. Aguarde recarga ou use a loja.
+          </Text>
+        )}
+      </View>
 
-      <BottomNav />
+      <View style={{ paddingBottom: insets.bottom }}>
+        <BottomNav />
+      </View>
     </View>
-  );
-}
-
-function QuickCard({
-  icon,
-  color,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof FontAwesome5.glyphMap;
-  color: string;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.quickCard,
-        { opacity: pressed ? 0.7 : 1 },
-      ]}
-    >
-      <LinearGradient
-        colors={[game.surfaceElevated, game.surface]}
-        style={styles.quickInner}
-      >
-        <View style={[styles.quickIcon, { backgroundColor: color + "22" }]}>
-          <FontAwesome5 name={icon} size={18} color={color} />
-        </View>
-        <Text style={styles.quickLabel}>{label}</Text>
-      </LinearGradient>
-    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: game.bg },
-  playerCard: {
-    marginHorizontal: 14,
-    marginTop: 4,
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    gap: 22,
+  },
+  profileCard: {
     padding: 14,
-    backgroundColor: game.surface + "DD",
+    backgroundColor: game.surface + "E6",
     borderRadius: 18,
     flexDirection: "row",
     alignItems: "center",
@@ -285,18 +249,18 @@ const styles = StyleSheet.create({
     backgroundColor: game.gold,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 20,
+    fontSize: 22,
   },
-  playerName: {
+  profileName: {
     color: game.text,
     fontFamily: "Inter_700Bold",
     fontSize: 16,
@@ -311,6 +275,17 @@ const styles = StyleSheet.create({
     color: game.textDim,
     fontFamily: "Inter_500Medium",
     fontSize: 12,
+  },
+  vipBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    backgroundColor: game.gold,
+  },
+  vipText: {
+    color: game.bgDeep,
+    fontFamily: "Inter_900Black",
+    fontSize: 9,
   },
   xpBar: {
     height: 6,
@@ -329,9 +304,17 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     marginTop: 4,
   },
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: game.surfaceElevated,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: game.border,
+  },
   rewardBanner: {
-    marginHorizontal: 14,
-    marginTop: 10,
     padding: 10,
     borderRadius: 12,
     backgroundColor: game.gold + "22",
@@ -346,91 +329,70 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
   },
-  mapHeader: {
-    flexDirection: "row",
+  titleWrap: {
     alignItems: "center",
-    paddingHorizontal: 14,
-    marginTop: 18,
+    gap: 4,
   },
-  mapName: {
+  titleEyebrow: {
+    color: game.gold,
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    letterSpacing: 4,
+  },
+  titleMain: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 22,
-    letterSpacing: 1.5,
+    fontSize: 36,
+    letterSpacing: 3,
   },
-  mapSubtitle: {
-    color: game.textDim,
-    fontFamily: "Inter_500Medium",
-    fontSize: 12,
-    marginTop: 2,
+  titleUnderline: {
+    width: 60,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: game.primary,
+    marginTop: 4,
   },
-  arrowBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: game.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: game.border,
+  playWrap: {
+    alignSelf: "center",
+    shadowColor: game.primary,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 18,
+    borderRadius: 100,
   },
-  mapFrame: {
-    marginTop: 12,
-    marginHorizontal: 14,
-    borderRadius: 22,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: game.border,
-  },
-  mapInner: {
-    padding: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 200,
-  },
-  lockOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: game.bgDeep + "CC",
+  playBtn: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    borderWidth: 4,
+    borderColor: game.gold + "AA",
   },
-  lockText: {
+  playLabel: {
     color: game.text,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 14,
+    fontFamily: "Inter_900Black",
+    fontSize: 32,
+    letterSpacing: 4,
   },
-  quickGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 14,
-    marginTop: 18,
-    gap: 10,
-  },
-  quickCard: {
-    width: "48%",
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: game.border,
-  },
-  quickInner: {
-    padding: 14,
+  playEnergyTag: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: game.bgDeep + "AA",
+    borderRadius: 10,
   },
-  quickIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quickLabel: {
+  playEnergyText: {
     color: game.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+  },
+  noEnergy: {
+    color: game.danger,
     fontFamily: "Inter_600SemiBold",
     fontSize: 12,
-    flex: 1,
+    textAlign: "center",
   },
 });

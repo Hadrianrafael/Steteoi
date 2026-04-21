@@ -7,6 +7,8 @@ import React, {
   useState,
 } from "react";
 
+export type PlaneTier = 1 | 2 | 3;
+
 export type Profile = {
   name: string;
   level: number;
@@ -17,10 +19,20 @@ export type Profile = {
   maxEnergy: number;
   league: "Bronze" | "Prata" | "Ouro" | "Diamante";
   trophies: number;
-  campaignProgress: number;
-  unlockedMaps: string[];
+  totalWins: number;
   ownedSkins: string[];
   selectedSkin: string;
+  planeTier: PlaneTier;
+  // Upgrades (each level adds bonus)
+  upgGrowth: number; // +0.2 troop/tick per level
+  upgAttack: number; // +0.03 win chance per level
+  upgStart: number; // +1 starting troops per level
+  upgPlaneSpeed: number; // -100ms plane time per level
+  // Skills (charges - reset per battle, but stored counts)
+  skillNuke: number;
+  skillRally: number;
+  skillShield: number;
+  vipActive: boolean;
   dailyLoginDay: number;
   lastLoginDate: string | null;
 };
@@ -35,15 +47,23 @@ const DEFAULT_PROFILE: Profile = {
   maxEnergy: 5,
   league: "Bronze",
   trophies: 0,
-  campaignProgress: 1,
-  unlockedMaps: ["usa", "br"],
+  totalWins: 0,
   ownedSkins: ["classic"],
   selectedSkin: "classic",
+  planeTier: 1,
+  upgGrowth: 0,
+  upgAttack: 0,
+  upgStart: 0,
+  upgPlaneSpeed: 0,
+  skillNuke: 1,
+  skillRally: 2,
+  skillShield: 1,
+  vipActive: false,
   dailyLoginDay: 0,
   lastLoginDate: null,
 };
 
-const STORAGE_KEY = "@empire_clash_profile_v1";
+const STORAGE_KEY = "@empire_clash_profile_v2";
 
 type Ctx = {
   profile: Profile;
@@ -55,11 +75,16 @@ type Ctx = {
   addXp: (n: number) => { leveledUp: boolean; newLevel: number };
   consumeEnergy: (n: number) => boolean;
   refillEnergy: () => void;
+  addEnergy: (n: number) => void;
   addTrophies: (n: number) => void;
-  unlockMap: (id: string) => void;
+  addWin: () => void;
   buySkin: (id: string, cost: number, currency: "coins" | "gems") => boolean;
   selectSkin: (id: string) => void;
-  advanceCampaign: () => void;
+  upgradePlane: () => boolean;
+  upgrade: (key: "upgGrowth" | "upgAttack" | "upgStart" | "upgPlaneSpeed") => boolean;
+  buySkill: (key: "skillNuke" | "skillRally" | "skillShield", cost: number) => boolean;
+  useSkill: (key: "skillNuke" | "skillRally" | "skillShield") => boolean;
+  activateVip: () => void;
   claimDailyLogin: () => { reward: number; type: "coins" | "gems" } | null;
   reset: () => void;
 };
@@ -76,6 +101,19 @@ function leagueFor(trophies: number): Profile["league"] {
 function xpForLevel(level: number) {
   return level * 100;
 }
+
+export const UPGRADE_COSTS = {
+  upgGrowth: (lvl: number) => 500 + lvl * 400,
+  upgAttack: (lvl: number) => 700 + lvl * 500,
+  upgStart: (lvl: number) => 600 + lvl * 450,
+  upgPlaneSpeed: (lvl: number) => 800 + lvl * 600,
+};
+
+export const PLANE_COSTS: Record<PlaneTier, number> = {
+  1: 0,
+  2: 2000,
+  3: 6000,
+};
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
@@ -99,34 +137,42 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile)).catch(() => {});
   }, [profile, ready]);
 
-  const update = useCallback((patch: Partial<Profile>) => {
-    setProfile((p) => ({ ...p, ...patch }));
-  }, []);
-
   const addCoins = (n: number) =>
     setProfile((p) => ({ ...p, coins: p.coins + n }));
   const addGems = (n: number) =>
     setProfile((p) => ({ ...p, gems: p.gems + n }));
 
-  const spendCoins = (n: number) => {
-    if (profile.coins < n) return false;
-    setProfile((p) => ({ ...p, coins: p.coins - n }));
-    return true;
-  };
-  const spendGems = (n: number) => {
-    if (profile.gems < n) return false;
-    setProfile((p) => ({ ...p, gems: p.gems - n }));
-    return true;
-  };
+  const spendCoins = useCallback(
+    (n: number) => {
+      if (profile.coins < n) return false;
+      setProfile((p) => ({ ...p, coins: p.coins - n }));
+      return true;
+    },
+    [profile.coins],
+  );
+  const spendGems = useCallback(
+    (n: number) => {
+      if (profile.gems < n) return false;
+      setProfile((p) => ({ ...p, gems: p.gems - n }));
+      return true;
+    },
+    [profile.gems],
+  );
 
-  const consumeEnergy = (n: number) => {
-    if (profile.energy < n) return false;
-    setProfile((p) => ({ ...p, energy: p.energy - n }));
-    return true;
-  };
+  const consumeEnergy = useCallback(
+    (n: number) => {
+      if (profile.energy < n) return false;
+      setProfile((p) => ({ ...p, energy: p.energy - n }));
+      return true;
+    },
+    [profile.energy],
+  );
 
   const refillEnergy = () =>
     setProfile((p) => ({ ...p, energy: p.maxEnergy }));
+
+  const addEnergy = (n: number) =>
+    setProfile((p) => ({ ...p, energy: Math.min(p.maxEnergy, p.energy + n) }));
 
   const addXp = (n: number) => {
     let leveledUp = false;
@@ -151,12 +197,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       return { ...p, trophies, league: leagueFor(trophies) };
     });
 
-  const unlockMap = (id: string) =>
-    setProfile((p) =>
-      p.unlockedMaps.includes(id)
-        ? p
-        : { ...p, unlockedMaps: [...p.unlockedMaps, id] },
-    );
+  const addWin = () =>
+    setProfile((p) => ({ ...p, totalWins: p.totalWins + 1 }));
 
   const buySkin = (id: string, cost: number, currency: "coins" | "gems") => {
     if (profile.ownedSkins.includes(id)) return false;
@@ -183,11 +225,43 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       p.ownedSkins.includes(id) ? { ...p, selectedSkin: id } : p,
     );
 
-  const advanceCampaign = () =>
-    setProfile((p) => ({
-      ...p,
-      campaignProgress: p.campaignProgress + 1,
-    }));
+  const upgradePlane = () => {
+    if (profile.planeTier >= 3) return false;
+    const next = (profile.planeTier + 1) as PlaneTier;
+    const cost = PLANE_COSTS[next];
+    if (profile.coins < cost) return false;
+    setProfile((p) => ({ ...p, coins: p.coins - cost, planeTier: next }));
+    return true;
+  };
+
+  const upgrade = (
+    key: "upgGrowth" | "upgAttack" | "upgStart" | "upgPlaneSpeed",
+  ) => {
+    const lvl = profile[key];
+    if (lvl >= 5) return false;
+    const cost = UPGRADE_COSTS[key](lvl);
+    if (profile.coins < cost) return false;
+    setProfile((p) => ({ ...p, coins: p.coins - cost, [key]: lvl + 1 }));
+    return true;
+  };
+
+  const buySkill = (
+    key: "skillNuke" | "skillRally" | "skillShield",
+    cost: number,
+  ) => {
+    if (profile.gems < cost) return false;
+    setProfile((p) => ({ ...p, gems: p.gems - cost, [key]: p[key] + 1 }));
+    return true;
+  };
+
+  const useSkill = (key: "skillNuke" | "skillRally" | "skillShield") => {
+    if (profile[key] <= 0) return false;
+    setProfile((p) => ({ ...p, [key]: p[key] - 1 }));
+    return true;
+  };
+
+  const activateVip = () =>
+    setProfile((p) => ({ ...p, vipActive: true, maxEnergy: 10, energy: 10 }));
 
   const claimDailyLogin = () => {
     const today = new Date().toDateString();
@@ -225,11 +299,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         addXp,
         consumeEnergy,
         refillEnergy,
+        addEnergy,
         addTrophies,
-        unlockMap,
+        addWin,
         buySkin,
         selectSkin,
-        advanceCampaign,
+        upgradePlane,
+        upgrade,
+        buySkill,
+        useSkill,
+        activateVip,
         claimDailyLogin,
         reset,
       }}

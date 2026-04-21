@@ -1,4 +1,4 @@
-import type { GameMap, Territory } from "./maps";
+import { ADJACENT_DIST, distance, type GameMap, type Territory } from "./maps";
 
 export type Owner = "player" | "ai1" | "ai2" | "ai3" | "ai4" | "neutral";
 
@@ -12,7 +12,6 @@ export type GameState = {
   map: GameMap;
   states: Record<string, TerritoryState>;
   players: Owner[];
-  turn: number;
   finished: boolean;
   winner: Owner | null;
 };
@@ -35,7 +34,7 @@ export const PLAYER_NAMES: Record<Owner, string> = {
   neutral: "Neutro",
 };
 
-export const MAX_TROOPS = 30;
+export const MAX_TROOPS = 50;
 export const TROOP_INTERVAL_MS = 1500;
 
 export function createGame(map: GameMap, numPlayers: number): GameState {
@@ -46,19 +45,17 @@ export function createGame(map: GameMap, numPlayers: number): GameState {
 
   const states: Record<string, TerritoryState> = {};
   const territories = [...map.territories];
-  // Shuffle deterministically-ish
   for (let i = territories.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [territories[i], territories[j]] = [territories[j]!, territories[i]!];
   }
 
-  // Assign starting territories: 1 per player, rest neutral
   territories.forEach((t, idx) => {
     const owner: Owner = idx < owners.length ? owners[idx]! : "neutral";
     states[t.id] = {
       id: t.id,
       owner,
-      troops: owner === "neutral" ? 3 + Math.floor(Math.random() * 4) : 8,
+      troops: owner === "neutral" ? 4 + Math.floor(Math.random() * 5) : 12,
     };
   });
 
@@ -66,52 +63,48 @@ export function createGame(map: GameMap, numPlayers: number): GameState {
     map,
     states,
     players: owners,
-    turn: 0,
     finished: false,
     winner: null,
   };
 }
 
-export function tickTroops(state: GameState): GameState {
+export function tickTroops(state: GameState, growthBonus = 0): GameState {
   const newStates: Record<string, TerritoryState> = {};
   for (const id in state.states) {
     const s = state.states[id]!;
     if (s.owner === "neutral") {
       newStates[id] = s;
     } else {
+      const inc = s.owner === "player" ? 1 + growthBonus : 1;
       newStates[id] = {
         ...s,
-        troops: Math.min(MAX_TROOPS, s.troops + 1),
+        troops: Math.min(MAX_TROOPS, s.troops + inc),
       };
     }
   }
   return { ...state, states: newStates };
 }
 
-export function attack(
+export type AttackOutcome = {
+  state: GameState;
+  conquered: boolean;
+  attackerSurvived: number;
+  defenderSurvived: number;
+};
+
+export function resolveAttack(
   state: GameState,
   fromId: string,
   toId: string,
-): { state: GameState; success: boolean; message: string } {
-  const from = state.states[fromId];
-  const to = state.states[toId];
-  const fromTerr = state.map.territories.find((t) => t.id === fromId);
-  if (!from || !to || !fromTerr) {
-    return { state, success: false, message: "inválido" };
-  }
-  if (!fromTerr.adj.includes(toId)) {
-    return { state, success: false, message: "Território não adjacente" };
-  }
-  if (from.troops < 2) {
-    return { state, success: false, message: "Tropas insuficientes" };
-  }
-
-  const sending = Math.floor(from.troops / 2);
-  const remaining = from.troops - sending;
+  sending: number,
+  attackBonus = 0,
+): AttackOutcome {
+  const from = state.states[fromId]!;
+  const to = state.states[toId]!;
   const newStates = { ...state.states };
+  const remaining = from.troops - sending;
 
   if (to.owner === from.owner) {
-    // Reinforce
     newStates[fromId] = { ...from, troops: remaining };
     newStates[toId] = {
       ...to,
@@ -119,36 +112,39 @@ export function attack(
     };
     return {
       state: { ...state, states: newStates },
-      success: true,
-      message: "Reforçado",
+      conquered: false,
+      attackerSurvived: sending,
+      defenderSurvived: to.troops,
+    };
+  }
+
+  let atk = sending;
+  let def = to.troops;
+  // Attacker bonus reduces defender slight advantage
+  const atkWinChance = 0.55 + attackBonus;
+  while (atk > 0 && def > 0) {
+    const r = Math.random();
+    if (r < atkWinChance) def--;
+    else atk--;
+  }
+  if (atk > 0) {
+    newStates[fromId] = { ...from, troops: remaining };
+    newStates[toId] = { ...to, owner: from.owner, troops: atk };
+    return {
+      state: { ...state, states: newStates },
+      conquered: true,
+      attackerSurvived: atk,
+      defenderSurvived: 0,
     };
   } else {
-    // Battle: simple stochastic
-    let atk = sending;
-    let def = to.troops;
-    while (atk > 0 && def > 0) {
-      const r = Math.random();
-      // Defender slight advantage
-      if (r < 0.45) atk--;
-      else def--;
-    }
-    if (atk > 0) {
-      newStates[fromId] = { ...from, troops: remaining };
-      newStates[toId] = { ...to, owner: from.owner, troops: atk };
-      return {
-        state: { ...state, states: newStates },
-        success: true,
-        message: "Conquistado!",
-      };
-    } else {
-      newStates[fromId] = { ...from, troops: remaining };
-      newStates[toId] = { ...to, troops: def };
-      return {
-        state: { ...state, states: newStates },
-        success: true,
-        message: "Atacado",
-      };
-    }
+    newStates[fromId] = { ...from, troops: remaining };
+    newStates[toId] = { ...to, troops: def };
+    return {
+      state: { ...state, states: newStates },
+      conquered: false,
+      attackerSurvived: 0,
+      defenderSurvived: def,
+    };
   }
 }
 
@@ -164,52 +160,61 @@ export function checkWinner(state: GameState): Owner | null {
   return null;
 }
 
-export function aiMove(state: GameState, who: Owner): GameState {
+export type AiAction = {
+  fromId: string;
+  toId: string;
+  sending: number;
+  isPlane: boolean;
+};
+
+export function chooseAiAction(state: GameState, who: Owner): AiAction | null {
   const myTerritories = state.map.territories.filter(
     (t) => state.states[t.id]?.owner === who,
   );
-  if (myTerritories.length === 0) return state;
+  if (myTerritories.length === 0) return null;
 
-  // Find candidate moves: my territory with troops>=4 attacking weakest neighbor
   type Move = {
     from: Territory;
     to: Territory;
     score: number;
-    isAttack: boolean;
   };
   const moves: Move[] = [];
 
   for (const from of myTerritories) {
     const fromState = state.states[from.id]!;
-    if (fromState.troops < 4) continue;
-    for (const adjId of from.adj) {
-      const to = state.map.territories.find((t) => t.id === adjId);
-      if (!to) continue;
-      const toState = state.states[adjId]!;
-      const sending = Math.floor(fromState.troops / 2);
-      if (toState.owner === who) {
-        // Reinforce only if adjacent enemies present
-        const hasEnemyNbr = to.adj.some((id) => {
-          const o = state.states[id]?.owner;
-          return o && o !== who && o !== "neutral";
-        });
-        if (hasEnemyNbr && toState.troops < 8) {
-          moves.push({ from, to, score: 5, isAttack: false });
-        }
-      } else {
-        // Attack: better if our send > their troops
-        const advantage = sending - toState.troops;
-        const score = 10 + advantage * 3;
-        if (sending > toState.troops - 2) {
-          moves.push({ from, to, score, isAttack: true });
-        }
+    if (fromState.troops < 5) continue;
+    const sending = Math.floor(fromState.troops * 0.7);
+
+    for (const to of state.map.territories) {
+      if (to.id === from.id) continue;
+      const toState = state.states[to.id]!;
+      const dist = distance(from, to);
+      const isPlane = dist > ADJACENT_DIST;
+
+      if (toState.owner === who) continue;
+
+      // Strong bias toward nearby weak enemies
+      const distancePenalty = dist / 30;
+      const advantage = sending - toState.troops;
+      const score = 12 + advantage * 3 - distancePenalty - (isPlane ? 4 : 0);
+
+      if (sending > toState.troops - 3) {
+        moves.push({ from, to, score });
       }
     }
   }
 
-  if (moves.length === 0) return state;
+  if (moves.length === 0) return null;
   moves.sort((a, b) => b.score - a.score);
-  const best = moves[0]!;
-  const result = attack(state, best.from.id, best.to.id);
-  return result.state;
+  // Slight randomness among top picks
+  const top = moves.slice(0, 3);
+  const pick = top[Math.floor(Math.random() * top.length)]!;
+  const fromState = state.states[pick.from.id]!;
+  const sending = Math.floor(fromState.troops * 0.7);
+  return {
+    fromId: pick.from.id,
+    toId: pick.to.id,
+    sending,
+    isPlane: distance(pick.from, pick.to) > ADJACENT_DIST,
+  };
 }

@@ -1,0 +1,174 @@
+Crie para mim um jogo mobile profissional chamado **Empire Clash**, pronto para Android (Play Store), estilo estratégia de conquista de territórios.
+
+# OBJETIVO
+
+Jogo viciante onde o jogador domina territórios, envia tropas e conquista o mapa inteiro.
+
+# IMPORTANTE ALTERAÇÃO
+
+**Não quero tela de escolher mapa.**
+
+## Quero assim:
+
+### Menu principal simples e bonito:
+
+* Perfil do jogador
+* Nível
+* Moedas
+* Diamantes
+* Energia
+* Loja
+* Configurações
+* Botão grande **PLAY**
+
+## Ao clicar em PLAY:
+
+**Já inicia a partida automaticamente.**
+
+Sem tela extra.
+
+---
+
+# DURANTE A PARTIDA
+
+## Quero mapa mundial automático com:
+
+* Continentes
+* Países
+* Ilhas
+* Oceanos
+* Regiões separadas
+
+## Cada território deve mostrar:
+
+* Bandeira do país dono
+* Cor do jogador
+* Quantidade de tropas
+
+Exemplo:
+
+* Brasil 🇧🇷
+* EUA 🇺🇸
+* Japão 🇯🇵
+* França 🇫🇷
+* Rússia 🇷🇺
+
+---
+
+# SISTEMA DE JOGO
+
+## Como funciona:
+
+* Cada território gera tropas sozinho
+* Jogador arrasta dedo para atacar outro território
+* Se for perto: tropas normais
+* Se for longe: enviar de avião automático
+
+## Quero avião voando no mapa:
+
+* Saindo de um país
+* Indo para outro
+* Linha aérea animada
+
+---
+
+# ILHAS
+
+Quero várias ilhas no mapa:
+
+* Havaí
+* Groenlândia
+* Caribe
+* Japão
+* Indonésia
+* Reino Unido
+* Madagascar
+* Filipinas
+
+As ilhas também podem ser conquistadas.
+
+---
+
+# VISUAL
+
+Quero visual premium:
+
+* Mapa bonito
+* Água animada
+* Aviões voando
+* Explosões leves
+* Interface moderna
+* Muito bonito igual jogo top mobile
+
+---
+
+# PARTE DE BAIXO DA TELA
+
+## Menu inferior:
+
+* Loja
+* Aviões
+* Melhorias
+* Habilidades
+* Ranking
+
+---
+
+# LOJA
+
+Mostrar direto:
+
+* Comprar moedas
+* Comprar diamantes
+* Rewarded Ads
+* Passe VIP
+* Skins
+
+---
+
+# ANÚNCIOS PREMIADOS
+
+Integrar AdMob Rewarded Ads:
+
+Assistir anúncio e ganhar:
+
+* Ouro
+* Diamantes
+* Boost
+* Energia
+
+---
+
+# LOGIN E SAVE
+
+* Login Google
+* Salvar progresso online
+
+---
+
+# TECNOLOGIA
+
+* React Native / Expo (ou melhor opção mobile)
+* Node.js backend
+* MongoDB
+
+---
+
+# QUERO AGORA
+
+Criar MVP completo pronto para publicar na Play Store com:
+
+* Botão PLAY direto
+* Partida inicia instantânea
+* Mapa mundial com ilhas
+* Bandeiras nos territórios
+* Aviões transportando tropas
+* Loja bonita
+* Reward Ads
+* Código profissional
+
+---
+
+# RESULTADO FINAL
+
+Quero jogo profissional, viciante e lucrativo para Play Store.
