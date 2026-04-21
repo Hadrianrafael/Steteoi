@@ -12,6 +12,7 @@ import React, {
 import {
   Animated,
   Easing,
+  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
@@ -98,6 +99,13 @@ export default function GameScreen() {
   const [explosions, setExplosions] = useState<
     { id: string; x: number; y: number }[]
   >([]);
+  const [dragLine, setDragLine] = useState<{
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  } | null>(null);
+  const dragOriginRef = useRef<string | null>(null);
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -303,6 +311,105 @@ export default function GameScreen() {
       setFlights((f) => [...f, flight]);
     },
     [applyAttack, profile.planeTier, profile.upgPlaneSpeed],
+  );
+
+  const performAttack = useCallback(
+    (fromId: string, toId: string) => {
+      if (fromId === toId) return;
+      const cur = stateRef.current;
+      const fromState = cur.states[fromId];
+      if (!fromState || fromState.owner !== "player") return;
+      if (fromState.troops < 2) {
+        showToast("Tropas insuficientes");
+        return;
+      }
+      const fromT = map.territories.find((t) => t.id === fromId)!;
+      const toT = map.territories.find((t) => t.id === toId)!;
+      const sending = Math.floor(fromState.troops * 0.7);
+      const isPlane = distance(fromT, toT) > ADJACENT_DIST;
+      const attackBonus = profile.upgAttack * 0.03;
+      launchAttack(fromId, toId, sending, "player", attackBonus, isPlane);
+      showToast(isPlane ? `Avião enviado: ${sending}` : `Ataque: ${sending}`);
+    },
+    [launchAttack, map.territories, profile.upgAttack],
+  );
+
+  const findTerritoryAt = useCallback(
+    (lx: number, ly: number) => {
+      // lx, ly are coords inside touchLayer (svgWidth x svgHeight)
+      let nearest: string | null = null;
+      let bestDist = 32; // touch radius in screen px
+      for (const t of map.territories) {
+        const cx = t.x * scaleX;
+        const cy = t.y * scaleY;
+        const d = Math.hypot(cx - lx, cy - ly);
+        if (d < bestDist) {
+          bestDist = d;
+          nearest = t.id;
+        }
+      }
+      return nearest;
+    },
+    [map.territories, scaleX, scaleY],
+  );
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => !paused && !state.finished,
+        onMoveShouldSetPanResponder: (_, g) =>
+          !paused &&
+          !state.finished &&
+          (Math.abs(g.dx) > 4 || Math.abs(g.dy) > 4),
+        onPanResponderGrant: (e) => {
+          const lx = e.nativeEvent.locationX;
+          const ly = e.nativeEvent.locationY;
+          const id = findTerritoryAt(lx, ly);
+          if (!id) return;
+          const ts = stateRef.current.states[id];
+          if (!ts || ts.owner !== "player" || ts.troops < 2) return;
+          dragOriginRef.current = id;
+          setSelected(id);
+          const t = map.territories.find((x) => x.id === id)!;
+          setDragLine({
+            x1: t.x * scaleX,
+            y1: t.y * scaleY,
+            x2: lx,
+            y2: ly,
+          });
+        },
+        onPanResponderMove: (e) => {
+          if (!dragOriginRef.current) return;
+          const lx = e.nativeEvent.locationX;
+          const ly = e.nativeEvent.locationY;
+          const t = map.territories.find(
+            (x) => x.id === dragOriginRef.current,
+          )!;
+          setDragLine({
+            x1: t.x * scaleX,
+            y1: t.y * scaleY,
+            x2: lx,
+            y2: ly,
+          });
+        },
+        onPanResponderRelease: (e) => {
+          const origin = dragOriginRef.current;
+          dragOriginRef.current = null;
+          setDragLine(null);
+          if (!origin) return;
+          const lx = e.nativeEvent.locationX;
+          const ly = e.nativeEvent.locationY;
+          const target = findTerritoryAt(lx, ly);
+          setSelected(null);
+          if (!target || target === origin) return;
+          performAttack(origin, target);
+        },
+        onPanResponderTerminate: () => {
+          dragOriginRef.current = null;
+          setDragLine(null);
+        },
+      }),
+    [findTerritoryAt, map.territories, paused, performAttack, scaleX, scaleY, state.finished],
   );
 
   const onTapTerritory = (id: string) => {
@@ -589,6 +696,7 @@ export default function GameScreen() {
 
           {/* Touch + flag overlay */}
           <View
+            {...panResponder.panHandlers}
             style={[styles.touchLayer, { width: svgWidth, height: svgHeight }]}
           >
             {map.territories.map((t) => {
@@ -641,6 +749,35 @@ export default function GameScreen() {
             {explosions.map((e) => (
               <Explosion key={e.id} x={e.x} y={e.y} />
             ))}
+
+            {/* Drag line overlay */}
+            {dragLine && (
+              <Svg
+                pointerEvents="none"
+                width={svgWidth}
+                height={svgHeight}
+                style={StyleSheet.absoluteFillObject}
+              >
+                <Line
+                  x1={dragLine.x1}
+                  y1={dragLine.y1}
+                  x2={dragLine.x2}
+                  y2={dragLine.y2}
+                  stroke={game.gold}
+                  strokeWidth={2.5}
+                  strokeDasharray="6,4"
+                  opacity={0.95}
+                />
+                <Circle
+                  cx={dragLine.x2}
+                  cy={dragLine.y2}
+                  r={10}
+                  fill="none"
+                  stroke={game.gold}
+                  strokeWidth={2}
+                />
+              </Svg>
+            )}
           </View>
         </Animated.View>
       </View>

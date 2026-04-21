@@ -1,0 +1,184 @@
+Crie para mim um jogo mobile **exatamente nesse estilo do vídeo enviado**, chamado **Empire Clash**, pronto para Android (Play Store), com visual moderno e profissional.
+
+# OBJETIVO
+
+Jogo de estratégia em tempo real de conquistar territórios no mapa mundial.
+
+# REFERÊNCIA PRINCIPAL
+
+Use o vídeo enviado como base de movimentação, interface, ritmo e estilo visual.
+
+---
+
+# MENU PRINCIPAL
+
+Quero menu bonito e simples:
+
+* Perfil do jogador
+* Nível
+* Ouro
+* Diamantes
+* Energia
+* Configurações
+* Loja
+* Botão grande **PLAY**
+
+## Importante:
+
+Ao clicar em **PLAY**, o jogo entra direto na partida.
+
+Sem tela de escolher mapa.
+
+---
+
+# DURANTE A PARTIDA
+
+## Quero mapa mundial estilo vídeo:
+
+* Países divididos
+* Continentes
+* Ilhas
+* Oceanos
+* Territórios separados
+
+## Cada território mostra:
+
+* Bandeira do país dono
+* Cor do jogador
+* Quantidade de tropas
+
+---
+
+# JOGABILIDADE
+
+## Sistema igual vídeo:
+
+* Cada território gera tropas automaticamente
+* Jogador arrasta dedo para atacar outro território
+* Captura novas áreas
+* IA inimiga joga ao mesmo tempo
+
+## Distância longa:
+
+Se território estiver longe:
+
+### Enviar tropas de avião automático
+
+* Avião voando no mapa
+* Rastro aéreo bonito
+* Chegando no país inimigo
+
+---
+
+# ILHAS IMPORTANTES
+
+Adicionar:
+
+* Japão
+* Reino Unido
+* Groenlândia
+* Madagascar
+* Indonésia
+* Filipinas
+* Caribe
+* Havaí
+
+Todas conquistáveis.
+
+---
+
+# VISUAL
+
+Quero visual top mobile:
+
+* Mapa bonito
+* Água animada
+* Tropas se movendo
+* Aviões animados
+* Explosões leves
+* Interface premium
+* FPS liso
+
+---
+
+# MENU INFERIOR
+
+* Loja
+* Aviões
+* Melhorias
+* Habilidades
+* Ranking
+* Eventos
+
+---
+
+# LOJA BONITA
+
+Mostrar itens direto:
+
+* Pacotes de ouro
+* Diamantes
+* Skins
+* Aviões especiais
+* Boosters
+* Passe VIP
+
+---
+
+# ANÚNCIOS PREMIADOS
+
+Integrar Google AdMob.
+
+## Reward Ads:
+
+Assistir anúncio e ganhar:
+
+* Ouro
+* Diamantes
+* Energia
+* Boost 2x
+
+## Intersticial:
+
+Somente entre partidas.
+
+---
+
+# LOGIN
+
+* Google Login
+* Save online
+* Conta do jogador
+
+---
+
+# TECNOLOGIA
+
+Use melhor opção para mobile:
+
+* React Native / Expo ou Unity se possível
+* Backend Node.js
+* MongoDB
+
+---
+
+# QUERO AGORA
+
+Criar MVP completo pronto para Play Store com:
+
+* Mesmo estilo do vídeo
+* PLAY direto
+* Partida instantânea
+* Mapa mundial bonito
+* Ilhas
+* Bandeiras
+* Aviões
+* Loja premium
+* Reward Ads
+* Código profissional
+
+---
+
+# RESULTADO FINAL
+
+Quero jogo viciante, bonito e lucrativo para Play Store.

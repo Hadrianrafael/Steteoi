@@ -19,6 +19,7 @@ const ITEMS: Item[] = [
   { label: "Melhorias", icon: "tools", route: "/upgrades" },
   { label: "Habilidades", icon: "bolt", route: "/skills" },
   { label: "Ranking", icon: "trophy", route: "/ranking" },
+  { label: "Eventos", icon: "calendar-alt", route: "/events" },
 ];
 
 export function BottomNav() {
@@ -94,16 +95,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "transparent",
   },
   label: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Inter_600SemiBold",
   },
 });

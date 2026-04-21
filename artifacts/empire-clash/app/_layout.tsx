@@ -52,6 +52,7 @@ function RootLayoutNav() {
       <Stack.Screen name="upgrades" options={{ title: "Melhorias" }} />
       <Stack.Screen name="skills" options={{ title: "Habilidades" }} />
       <Stack.Screen name="ranking" options={{ title: "Ranking" }} />
+      <Stack.Screen name="events" options={{ title: "Eventos" }} />
       <Stack.Screen
         name="settings"
         options={{ title: "Configurações", presentation: "modal" }}

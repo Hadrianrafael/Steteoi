@@ -28,11 +28,12 @@ export const WORLD_MAP: GameMap = {
     { id: "ca", name: "Canadá", flag: "🇨🇦", x: 140, y: 75, adj: ["us", "gl"] },
     { id: "mx", name: "México", flag: "🇲🇽", x: 130, y: 175, adj: ["us", "co", "cu"] },
     { id: "gl", name: "Groenlândia", flag: "🇬🇱", x: 245, y: 50, isIsland: true, adj: ["ca", "uk"] },
-    { id: "cu", name: "Cuba", flag: "🇨🇺", x: 175, y: 170, isIsland: true, adj: ["us", "mx", "co"] },
+    { id: "cu", name: "Cuba", flag: "🇨🇺", x: 175, y: 170, isIsland: true, adj: ["us", "mx", "ca-rib"] },
+    { id: "ca-rib", name: "Caribe", flag: "🇩🇴", x: 200, y: 185, isIsland: true, adj: ["cu", "co"] },
     { id: "hi", name: "Havaí", flag: "🇺🇸", x: 50, y: 175, isIsland: true, adj: [] },
 
     // South America
-    { id: "co", name: "Colômbia", flag: "🇨🇴", x: 175, y: 215, adj: ["mx", "br", "pe"] },
+    { id: "co", name: "Colômbia", flag: "🇨🇴", x: 175, y: 215, adj: ["mx", "br", "pe", "ca-rib"] },
     { id: "br", name: "Brasil", flag: "🇧🇷", x: 220, y: 250, adj: ["co", "pe", "ar"] },
     { id: "pe", name: "Peru", flag: "🇵🇪", x: 175, y: 260, adj: ["co", "br", "ar"] },
     { id: "ar", name: "Argentina", flag: "🇦🇷", x: 195, y: 305, adj: ["br", "pe"] },
