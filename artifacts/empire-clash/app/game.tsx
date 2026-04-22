@@ -752,6 +752,8 @@ export default function GameScreen() {
               const cx = t.x * scaleX;
               const cy = t.y * scaleY;
               const r = 22;
+              const ownerColor = PLAYER_COLORS[ts.owner];
+              const isMine = ts.owner === "player";
               return (
                 <Pressable
                   key={t.id}
@@ -767,7 +769,21 @@ export default function GameScreen() {
                   }}
                 >
                   <Text style={styles.flagText}>{t.flag}</Text>
-                  <View style={styles.troopBadge}>
+                  {isMine && (
+                    <View style={styles.ownerCrown}>
+                      <Text style={{ fontSize: 9 }}>👑</Text>
+                    </View>
+                  )}
+                  <View
+                    style={[
+                      styles.troopBadge,
+                      {
+                        backgroundColor: ownerColor,
+                        borderColor:
+                          ts.owner === "neutral" ? game.border : "#FFFFFF",
+                      },
+                    ]}
+                  >
                     <Text style={styles.troopText}>{ts.troops}</Text>
                   </View>
                 </Pressable>
@@ -1070,6 +1086,19 @@ const styles = StyleSheet.create({
   flagText: {
     fontSize: 18,
     textAlign: "center",
+  },
+  ownerCrown: {
+    position: "absolute",
+    top: -10,
+    right: -2,
+    backgroundColor: game.gold,
+    borderRadius: 8,
+    width: 14,
+    height: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: game.bgDeep,
   },
   troopBadge: {
     position: "absolute",
