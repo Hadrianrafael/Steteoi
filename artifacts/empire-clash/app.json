@@ -89,9 +89,6 @@
       "reactCompiler": true
     },
     "extra": {
-      "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
-      },
       "admob": {
         "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
         "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
@@ -100,7 +97,6 @@
         "useTestAds": true
       }
     },
-    "owner": "REPLACE_WITH_EXPO_USERNAME",
     "runtimeVersion": {
       "policy": "appVersion"
     }
