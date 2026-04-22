@@ -5,18 +5,60 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "empire-clash",
+    "scheme": "empireclash",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "primaryColor": "#FFB800",
+    "description": "Domine o mundo em batalhas de estratégia em tempo real. Conquiste territórios, monte sua frota aérea e vença seus inimigos no maior jogo de conquista mobile do Brasil.",
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#06061A"
     },
+    "assetBundlePatterns": [
+      "assets/**/*"
+    ],
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.empireclash.game",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "Este identificador será usado para mostrar anúncios mais relevantes para você.",
+        "SKAdNetworkItems": [
+          { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" }
+        ]
+      }
     },
-    "android": {},
+    "android": {
+      "package": "com.empireclash.game",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#06061A"
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "VIBRATE",
+        "com.google.android.gms.permission.AD_ID",
+        "com.android.vending.BILLING"
+      ],
+      "blockedPermissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [{ "scheme": "empireclash" }]
+        }
+      ]
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -28,11 +70,39 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      },
+      "admob": {
+        "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
+        "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
+        "rewardedAndroid": "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX",
+        "interstitialAndroid": "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX",
+        "useTestAds": true
+      }
+    },
+    "owner": "REPLACE_WITH_EXPO_USERNAME",
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
