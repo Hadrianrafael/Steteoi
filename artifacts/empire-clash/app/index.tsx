@@ -42,13 +42,13 @@ export default function Home() {
         Animated.timing(pulse, {
           toValue: 1.06,
           duration: 900,
-          useNativeDriver: true,
+          useNativeDriver: false,
           easing: Easing.inOut(Easing.ease),
         }),
         Animated.timing(pulse, {
           toValue: 1,
           duration: 900,
-          useNativeDriver: true,
+          useNativeDriver: false,
           easing: Easing.inOut(Easing.ease),
         }),
       ]),
