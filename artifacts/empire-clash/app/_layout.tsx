@@ -36,6 +36,10 @@ function RootLayoutNav() {
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen
+        name="lobby"
+        options={{ headerShown: false, animation: "slide_from_bottom" }}
+      />
+      <Stack.Screen
         name="game"
         options={{ headerShown: false, animation: "fade" }}
       />

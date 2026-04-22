@@ -23,7 +23,7 @@ import { useGame, xpProgress } from "@/contexts/GameContext";
 export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { profile, claimDailyLogin, consumeEnergy } = useGame();
+  const { profile, claimDailyLogin } = useGame();
   const [reward, setReward] = useState<{
     reward: number;
     type: "coins" | "gems";
@@ -72,11 +72,11 @@ export default function Home() {
   const xpFrac = xpProgress(profile);
 
   const handlePlay = () => {
-    if (!consumeEnergy(1)) return;
+    if (profile.energy < 1) return;
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     }
-    router.push("/game");
+    router.push("/lobby");
   };
 
   return (

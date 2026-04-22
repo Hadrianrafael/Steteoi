@@ -7,7 +7,15 @@ import React, {
   useState,
 } from "react";
 
-export type PlaneTier = 1 | 2 | 3;
+export type PlaneTier = 1 | 2 | 3 | 4 | 5;
+
+export type SkillKey =
+  | "skillNuke"
+  | "skillRally"
+  | "skillShield"
+  | "skillSpy"
+  | "skillFury"
+  | "skillFreeze";
 
 export type Profile = {
   name: string;
@@ -17,24 +25,26 @@ export type Profile = {
   gems: number;
   energy: number;
   maxEnergy: number;
-  league: "Bronze" | "Prata" | "Ouro" | "Diamante";
+  league: "Bronze" | "Prata" | "Ouro" | "Diamante" | "Mestre" | "Lendário";
   trophies: number;
   totalWins: number;
   ownedSkins: string[];
   selectedSkin: string;
   planeTier: PlaneTier;
-  // Upgrades (each level adds bonus)
-  upgGrowth: number; // +0.2 troop/tick per level
-  upgAttack: number; // +0.03 win chance per level
-  upgStart: number; // +1 starting troops per level
-  upgPlaneSpeed: number; // -100ms plane time per level
-  // Skills (charges - reset per battle, but stored counts)
+  upgGrowth: number;
+  upgAttack: number;
+  upgStart: number;
+  upgPlaneSpeed: number;
   skillNuke: number;
   skillRally: number;
   skillShield: number;
+  skillSpy: number;
+  skillFury: number;
+  skillFreeze: number;
   vipActive: boolean;
   dailyLoginDay: number;
   lastLoginDate: string | null;
+  seasonPoints: number;
 };
 
 const DEFAULT_PROFILE: Profile = {
@@ -58,12 +68,16 @@ const DEFAULT_PROFILE: Profile = {
   skillNuke: 1,
   skillRally: 2,
   skillShield: 1,
+  skillSpy: 1,
+  skillFury: 1,
+  skillFreeze: 1,
   vipActive: false,
   dailyLoginDay: 0,
   lastLoginDate: null,
+  seasonPoints: 0,
 };
 
-const STORAGE_KEY = "@empire_clash_profile_v2";
+const STORAGE_KEY = "@empire_clash_profile_v3";
 
 type Ctx = {
   profile: Profile;
@@ -82,8 +96,8 @@ type Ctx = {
   selectSkin: (id: string) => void;
   upgradePlane: () => boolean;
   upgrade: (key: "upgGrowth" | "upgAttack" | "upgStart" | "upgPlaneSpeed") => boolean;
-  buySkill: (key: "skillNuke" | "skillRally" | "skillShield", cost: number) => boolean;
-  useSkill: (key: "skillNuke" | "skillRally" | "skillShield") => boolean;
+  buySkill: (key: SkillKey, cost: number) => boolean;
+  useSkill: (key: SkillKey) => boolean;
   activateVip: () => void;
   claimDailyLogin: () => { reward: number; type: "coins" | "gems" } | null;
   reset: () => void;
@@ -92,6 +106,8 @@ type Ctx = {
 const GameCtx = createContext<Ctx | null>(null);
 
 function leagueFor(trophies: number): Profile["league"] {
+  if (trophies >= 4000) return "Lendário";
+  if (trophies >= 2500) return "Mestre";
   if (trophies >= 1500) return "Diamante";
   if (trophies >= 800) return "Ouro";
   if (trophies >= 300) return "Prata";
@@ -113,6 +129,8 @@ export const PLANE_COSTS: Record<PlaneTier, number> = {
   1: 0,
   2: 2000,
   3: 6000,
+  4: 14000,
+  5: 30000,
 };
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
@@ -194,7 +212,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const addTrophies = (n: number) =>
     setProfile((p) => {
       const trophies = Math.max(0, p.trophies + n);
-      return { ...p, trophies, league: leagueFor(trophies) };
+      return {
+        ...p,
+        trophies,
+        league: leagueFor(trophies),
+        seasonPoints: Math.max(0, p.seasonPoints + n),
+      };
     });
 
   const addWin = () =>
@@ -226,7 +249,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     );
 
   const upgradePlane = () => {
-    if (profile.planeTier >= 3) return false;
+    if (profile.planeTier >= 5) return false;
     const next = (profile.planeTier + 1) as PlaneTier;
     const cost = PLANE_COSTS[next];
     if (profile.coins < cost) return false;
@@ -245,16 +268,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const buySkill = (
-    key: "skillNuke" | "skillRally" | "skillShield",
-    cost: number,
-  ) => {
+  const buySkill = (key: SkillKey, cost: number) => {
     if (profile.gems < cost) return false;
     setProfile((p) => ({ ...p, gems: p.gems - cost, [key]: p[key] + 1 }));
     return true;
   };
 
-  const useSkill = (key: "skillNuke" | "skillRally" | "skillShield") => {
+  const useSkill = (key: SkillKey) => {
     if (profile[key] <= 0) return false;
     setProfile((p) => ({ ...p, [key]: p[key] - 1 }));
     return true;

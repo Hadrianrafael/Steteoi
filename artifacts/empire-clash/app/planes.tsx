@@ -32,11 +32,27 @@ const PLANES: {
   },
   {
     tier: 3,
+    name: "Caça Stealth",
+    desc: "Invisível ao radar inimigo. Velocidade alta",
+    speed: "0.8s",
+    color: game.purple,
+    icon: "plane",
+  },
+  {
+    tier: 4,
     name: "Drone Hipersônico",
     desc: "Velocidade quase instantânea entre continentes",
-    speed: "0.7s",
+    speed: "0.6s",
     color: game.primary,
     icon: "rocket",
+  },
+  {
+    tier: 5,
+    name: "Frota Imperial",
+    desc: "Aviões dourados de elite. Aura intimidadora",
+    speed: "0.4s",
+    color: game.gold,
+    icon: "crown",
   },
 ];
 
@@ -44,7 +60,7 @@ export default function PlanesScreen() {
   const { profile, upgradePlane } = useGame();
 
   const handleUpgrade = () => {
-    if (profile.planeTier >= 3) {
+    if (profile.planeTier >= 5) {
       Alert.alert("Frota máxima", "Você já tem a melhor aeronave.");
       return;
     }
@@ -113,7 +129,7 @@ export default function PlanesScreen() {
         );
       })}
 
-      {profile.planeTier < 3 && (
+      {profile.planeTier < 5 && (
         <Pressable onPress={handleUpgrade} style={styles.cta}>
           <LinearGradient
             colors={[game.gold, game.goldDark]}

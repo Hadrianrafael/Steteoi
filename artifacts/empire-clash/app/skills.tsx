@@ -1,58 +1,101 @@
 import { FontAwesome5 } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { game } from "@/constants/colors";
-import { useGame } from "@/contexts/GameContext";
+import { useGame, type SkillKey } from "@/contexts/GameContext";
 
-const SKILLS = [
+const SKILLS: {
+  key: SkillKey;
+  name: string;
+  desc: string;
+  icon: keyof typeof import("@expo/vector-icons/FontAwesome5").default.glyphMap;
+  color: string;
+  cost: number;
+}[] = [
   {
-    key: "skillNuke" as const,
+    key: "skillNuke",
     name: "Bomba Tática",
     desc: "Reduz tropas inimigas pela metade no mapa inteiro",
-    icon: "bomb" as const,
+    icon: "bomb",
     color: game.danger,
     cost: 10,
   },
   {
-    key: "skillRally" as const,
+    key: "skillRally",
     name: "Reforço Imediato",
     desc: "+5 tropas em todos os seus territórios",
-    icon: "users" as const,
+    icon: "users",
     color: game.success,
     cost: 6,
   },
   {
-    key: "skillShield" as const,
+    key: "skillShield",
     name: "Escudo Defensivo",
     desc: "Defesa +15% por 8 segundos",
-    icon: "shield-alt" as const,
+    icon: "shield-alt",
     color: game.gem,
     cost: 8,
+  },
+  {
+    key: "skillFury",
+    name: "Fúria de Guerra",
+    desc: "+30% de chance de vitória em ataques por 10 segundos",
+    icon: "fire",
+    color: "#FF6A1A",
+    cost: 12,
+  },
+  {
+    key: "skillFreeze",
+    name: "Congelar Inimigos",
+    desc: "IAs inimigas paralisam por 5 segundos",
+    icon: "snowflake",
+    color: "#7FD8FF",
+    cost: 14,
+  },
+  {
+    key: "skillSpy",
+    name: "Espião Tático",
+    desc: "Revela movimentos do inimigo por 10 segundos",
+    icon: "user-secret",
+    color: game.purple,
+    cost: 9,
   },
 ];
 
 export default function SkillsScreen() {
   const { profile, buySkill } = useGame();
 
-  const handleBuy = (key: (typeof SKILLS)[number]["key"], cost: number) => {
+  const handleBuy = (key: SkillKey, cost: number) => {
     if (!buySkill(key, cost)) {
       Alert.alert("Gemas insuficientes");
     }
   };
+
+  const totalSkills =
+    profile.skillNuke +
+    profile.skillRally +
+    profile.skillShield +
+    profile.skillFury +
+    profile.skillFreeze +
+    profile.skillSpy;
 
   return (
     <ScrollView
       style={styles.root}
       contentContainerStyle={{ padding: 14, gap: 12, paddingBottom: 40 }}
     >
-      <View style={styles.hero}>
-        <Text style={styles.heroEyebrow}>ARSENAL</Text>
-        <Text style={styles.heroTitle}>Habilidades Especiais</Text>
+      <LinearGradient
+        colors={[game.purple + "55", game.surface]}
+        style={styles.hero}
+      >
+        <Text style={styles.heroEyebrow}>ARSENAL TÁTICO</Text>
+        <Text style={styles.heroTitle}>6 Habilidades Especiais</Text>
         <Text style={styles.heroSub}>
-          Cargas usadas durante batalhas. Compre com gemas.
+          {totalSkills} cargas no estoque. Use durante batalhas.
         </Text>
-      </View>
+      </LinearGradient>
 
       {SKILLS.map((s) => (
         <View key={s.key} style={[styles.card, { borderColor: s.color + "55" }]}>
@@ -89,10 +132,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: game.bg },
   hero: {
     padding: 16,
-    backgroundColor: game.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: game.border,
+    borderColor: game.purple + "55",
     gap: 4,
   },
   heroEyebrow: {

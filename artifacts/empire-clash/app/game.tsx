@@ -1,7 +1,7 @@
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -15,6 +15,7 @@ import {
   PanResponder,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -61,20 +62,26 @@ type Flight = {
   duration: number;
 };
 
-const NUM_PLAYERS = 5;
-
 const PLANE_BASE_DURATION = 1300;
 
 export default function GameScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ players?: string; diff?: string }>();
   const { width, height } = useWindowDimensions();
   const { profile, useSkill } = useGame();
+
+  const numPlayers = Math.max(2, Math.min(5, Number(params.players) || 4));
+  const difficulty = (params.diff as "easy" | "normal" | "hard") || "normal";
+  const aiSpeedMult =
+    difficulty === "easy" ? 1.5 : difficulty === "hard" ? 0.65 : 1;
+  const aiAttackBonus =
+    difficulty === "easy" ? -0.05 : difficulty === "hard" ? 0.08 : 0;
 
   const map = useMemo(() => getMap(), []);
 
   const [state, setState] = useState<GameState>(() => {
-    const s = createGame(map, NUM_PLAYERS);
+    const s = createGame(map, numPlayers);
     // Apply starting troops upgrade for player
     const bonus = profile.upgStart;
     if (bonus > 0) {
@@ -96,6 +103,9 @@ export default function GameScreen() {
   const [paused, setPaused] = useState(false);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [shieldActive, setShieldActive] = useState(false);
+  const [furyActive, setFuryActive] = useState(false);
+  const [freezeActive, setFreezeActive] = useState(false);
+  const [spyActive, setSpyActive] = useState(false);
   const [explosions, setExplosions] = useState<
     { id: string; x: number; y: number }[]
   >([]);
@@ -158,16 +168,24 @@ export default function GameScreen() {
           () => {
             const s = stateRef.current;
             if (s.finished) return;
+            if (freezeActive) return;
             const action = chooseAiAction(s, ai);
             if (!action) return;
-            launchAttack(action.fromId, action.toId, action.sending, ai, 0, action.isPlane);
+            launchAttack(
+              action.fromId,
+              action.toId,
+              action.sending,
+              ai,
+              aiAttackBonus,
+              action.isPlane,
+            );
           },
-          2400 + idx * 800,
+          (2400 + idx * 800) * aiSpeedMult,
         );
         intervals.push(interval);
       });
     return () => intervals.forEach(clearInterval);
-  }, [paused, state.finished, state.players]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [paused, state.finished, state.players, freezeActive, aiSpeedMult, aiAttackBonus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Win check
   useEffect(() => {
@@ -327,11 +345,11 @@ export default function GameScreen() {
       const toT = map.territories.find((t) => t.id === toId)!;
       const sending = Math.floor(fromState.troops * 0.7);
       const isPlane = distance(fromT, toT) > ADJACENT_DIST;
-      const attackBonus = profile.upgAttack * 0.03;
+      const attackBonus = profile.upgAttack * 0.03 + (furyActive ? 0.3 : 0);
       launchAttack(fromId, toId, sending, "player", attackBonus, isPlane);
       showToast(isPlane ? `Avião enviado: ${sending}` : `Ataque: ${sending}`);
     },
-    [launchAttack, map.territories, profile.upgAttack],
+    [furyActive, launchAttack, map.territories, profile.upgAttack],
   );
 
   const findTerritoryAt = useCallback(
@@ -444,7 +462,7 @@ export default function GameScreen() {
     }
     const sending = Math.floor(fromState.troops * 0.7);
     const isPlane = distance(fromT, toT) > ADJACENT_DIST;
-    const attackBonus = profile.upgAttack * 0.03;
+    const attackBonus = profile.upgAttack * 0.03 + (furyActive ? 0.3 : 0);
 
     launchAttack(selected, id, sending, "player", attackBonus, isPlane);
     setSelected(null);
@@ -505,6 +523,36 @@ export default function GameScreen() {
     setShieldActive(true);
     showToast("Escudo ativo (8s)");
     setTimeout(() => setShieldActive(false), 8000);
+  };
+
+  const triggerFury = () => {
+    if (!useSkill("skillFury")) {
+      showToast("Sem cargas de fúria");
+      return;
+    }
+    setFuryActive(true);
+    showToast("FÚRIA! +30% ataque (10s)");
+    setTimeout(() => setFuryActive(false), 10000);
+  };
+
+  const triggerFreeze = () => {
+    if (!useSkill("skillFreeze")) {
+      showToast("Sem cargas de congelar");
+      return;
+    }
+    setFreezeActive(true);
+    showToast("INIMIGOS CONGELADOS! (5s)");
+    setTimeout(() => setFreezeActive(false), 5000);
+  };
+
+  const triggerSpy = () => {
+    if (!useSkill("skillSpy")) {
+      showToast("Sem cargas de espião");
+      return;
+    }
+    setSpyActive(true);
+    showToast("ESPIÃO ATIVO (10s)");
+    setTimeout(() => setSpyActive(false), 10000);
   };
 
   // Counts per owner
@@ -782,8 +830,12 @@ export default function GameScreen() {
         </Animated.View>
       </View>
 
-      {/* Skill bar */}
-      <View style={styles.skillBar}>
+      {/* Skill bar (scrollable) */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.skillBar}
+      >
         <SkillButton
           icon="bomb"
           label="BOMBA"
@@ -806,7 +858,31 @@ export default function GameScreen() {
           onPress={triggerShield}
           disabled={shieldActive}
         />
-      </View>
+        <SkillButton
+          icon="fire"
+          label="FÚRIA"
+          color={"#FF6A1A"}
+          count={profile.skillFury}
+          onPress={triggerFury}
+          disabled={furyActive}
+        />
+        <SkillButton
+          icon="snowflake"
+          label="CONGELAR"
+          color={"#7FD8FF"}
+          count={profile.skillFreeze}
+          onPress={triggerFreeze}
+          disabled={freezeActive}
+        />
+        <SkillButton
+          icon="user-secret"
+          label="ESPIÃO"
+          color={game.purple}
+          count={profile.skillSpy}
+          onPress={triggerSpy}
+          disabled={spyActive}
+        />
+      </ScrollView>
 
       {toast && (
         <View style={[styles.toast, { bottom: 130 + insets.bottom }]}>
@@ -1020,14 +1096,15 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   skillBtn: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    padding: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 14,
     backgroundColor: game.surface,
     borderWidth: 1.5,
+    minWidth: 130,
   },
   skillLabel: {
     flex: 1,
