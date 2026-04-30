@@ -51,10 +51,10 @@ const DEFAULT_PROFILE: Profile = {
   name: "Comandante",
   level: 1,
   xp: 0,
-  coins: 1500,
-  gems: 50,
-  energy: 5,
-  maxEnergy: 5,
+  coins: 0,
+  gems: 0,
+  energy: 30,
+  maxEnergy: 30,
   league: "Bronze",
   trophies: 0,
   totalWins: 0,
@@ -65,19 +65,19 @@ const DEFAULT_PROFILE: Profile = {
   upgAttack: 0,
   upgStart: 0,
   upgPlaneSpeed: 0,
-  skillNuke: 1,
-  skillRally: 2,
-  skillShield: 1,
-  skillSpy: 1,
-  skillFury: 1,
-  skillFreeze: 1,
+  skillNuke: 0,
+  skillRally: 0,
+  skillShield: 0,
+  skillSpy: 0,
+  skillFury: 0,
+  skillFreeze: 0,
   vipActive: false,
   dailyLoginDay: 0,
   lastLoginDate: null,
   seasonPoints: 0,
 };
 
-const STORAGE_KEY = "@empire_clash_profile_v3";
+const STORAGE_KEY = "@empire_clash_profile_v4";
 
 type Ctx = {
   profile: Profile;
@@ -281,7 +281,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   };
 
   const activateVip = () =>
-    setProfile((p) => ({ ...p, vipActive: true, maxEnergy: 10, energy: 10 }));
+    setProfile((p) => ({ ...p, vipActive: true, maxEnergy: 60, energy: 60 }));
 
   const claimDailyLogin = () => {
     const today = new Date().toDateString();

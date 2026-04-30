@@ -1,0 +1,157 @@
+Quero transformar a interface do meu jogo Empire Clash em um padrão profissional igual aos exemplos enviados.
+
+# 1. LOJA (SHOP UI)
+
+Criar uma loja com layout moderno igual Clash/State.io:
+
+## Estrutura:
+
+- Seção: PACKS INICIANTE
+  - Pack com:
+    - Gemas
+    - Tickets
+    - Boosters
+    - Botão com preço (R$)
+    - Botão de anúncio (Rewarded)
+
+- Seção: BOOSTERS
+  - Cartas com estrelas (nível)
+  - Preço em gemas
+  - Visual com cores diferentes (azul, rosa, laranja)
+
+- Seção: OFERTAS DIÁRIAS
+  - Timer (contagem regressiva)
+  - Cards com itens rotativos
+
+- Seção: DIAMANTES
+  - Compra com dinheiro real
+  - Botão “GRÁTIS” com anúncio
+
+- Seção: MOEDAS
+  - Compra com gemas
+  - Opção grátis com anúncio
+
+## IMPORTANTE:
+- Tudo visível direto (sem precisar clicar)
+- UI limpa, moderna e responsiva
+
+---
+
+# 2. PERSONAGENS (AVIÕES)
+
+Criar sistema de personagens tipo “coleção”:
+
+- Cada personagem tem:
+  - Ícone (imagem)
+  - Nível (NV 1, NV 2…)
+  - Progresso (ex: 5/10)
+  - Botão EQUIPAR
+  - Habilidade especial
+
+## Layout:
+- Grid horizontal
+- Itens bloqueados com cadeado
+- “AINDA NÃO ENCONTRADO”
+
+---
+
+# 3. HABILIDADES
+
+Sistema de habilidades estilo cartas:
+
+- Cada habilidade tem:
+  - Nome
+  - Descrição
+  - Upgrade visual (antes/depois)
+  - Tempo de recarga
+  - Ícone
+
+## Exemplo:
+“Aumenta velocidade de produção”
++0.05 → +0.1
+
+---
+
+# 4. SISTEMA DE UPGRADES
+
+Criar tela:
+
+"SUA MELHORIAS"
+
+Com:
+
+- Guarnição
+- Produção
+- Capacidade
+
+Cada upgrade:
+
+- Nível
+- Valor
+- Custo em moedas
+- Botão upgrade
+
+---
+
+# 5. SISTEMA DE ANÚNCIOS (IMPORTANTE)
+
+Integrar AdMob Rewarded Ads:
+
+## Usos:
+
+- Triplicar moedas após partida
+- Ganhar moedas grátis
+- Recuperar energia
+- Liberar habilidades
+- Upgrade grátis
+
+## Lógica:
+
+- Botão "ASSISTIR VÍDEO"
+- Após assistir → recompensa
+
+---
+
+# 6. ENERGIA
+
+- Máximo: 30
+- Gasta ao jogar
+- Recupera com tempo
+- Recupera com anúncio
+
+---
+
+# 7. ECONOMIA
+
+- Moedas começam em 0
+- Gemas começam em 0
+- Balanceamento justo
+
+---
+
+# 8. MAPA
+
+- Mostrar apenas bandeiras dos jogadores
+- Evitar poluição visual
+- Animação de envio de tropas (avião)
+
+---
+
+# 9. UX (EXPERIÊNCIA)
+
+- Animações suaves
+- Feedback visual ao clicar
+- Sons leves
+- Interface fluida
+
+---
+
+# 10. FINAL
+
+Quero o jogo com aparência profissional pronto para:
+
+- Publicar na Play Store
+- Monetizar com AdMob
+- Escalar no futuro
+
+Pode começar a implementar.

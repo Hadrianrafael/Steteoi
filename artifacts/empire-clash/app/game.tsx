@@ -768,10 +768,20 @@ export default function GameScreen() {
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={styles.flagText}>{t.flag}</Text>
-                  {isMine && (
-                    <View style={styles.ownerCrown}>
-                      <Text style={{ fontSize: 9 }}>👑</Text>
+                  {ts.owner !== "neutral" && (
+                    <View
+                      style={[
+                        styles.ownerFlag,
+                        {
+                          backgroundColor: ownerColor,
+                          borderColor: isMine ? game.gold : "#FFFFFF",
+                          borderWidth: isMine ? 2 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={styles.ownerFlagText}>
+                        {isMine ? "👑" : "⚔"}
+                      </Text>
                     </View>
                   )}
                   <View
@@ -1087,18 +1097,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
   },
-  ownerCrown: {
+  ownerFlag: {
     position: "absolute",
-    top: -10,
-    right: -2,
-    backgroundColor: game.gold,
-    borderRadius: 8,
-    width: 14,
-    height: 14,
+    top: -2,
+    width: 24,
+    height: 18,
+    borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: game.bgDeep,
+  },
+  ownerFlagText: {
+    fontSize: 11,
   },
   troopBadge: {
     position: "absolute",

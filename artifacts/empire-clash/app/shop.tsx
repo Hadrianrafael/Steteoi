@@ -1,6 +1,5 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -17,92 +16,62 @@ import {
 import { game } from "@/constants/colors";
 import { useGame } from "@/contexts/GameContext";
 
-type Tab = "destaques" | "moedas" | "gemas" | "aviões" | "skins" | "ads";
-
-type CoinPack = {
-  id: string;
-  amount: number;
-  bonus: number;
-  price: string;
-  badge?: string;
-  color: string;
-  size: "sm" | "md" | "lg" | "xl";
-};
-
-const COIN_PACKS: CoinPack[] = [
-  { id: "c1", amount: 500, bonus: 0, price: "R$ 4,90", color: game.gold, size: "sm" },
-  { id: "c2", amount: 1500, bonus: 100, price: "R$ 9,90", color: game.gold, size: "md", badge: "+100" },
-  { id: "c3", amount: 5000, bonus: 800, price: "R$ 24,90", color: game.gold, size: "lg", badge: "POPULAR" },
-  { id: "c4", amount: 15000, bonus: 4000, price: "R$ 74,90", color: game.gold, size: "xl", badge: "MELHOR" },
+const COIN_PACKS = [
+  { id: "c1", amount: 500, bonus: 0, price: "R$ 4,90", size: "sm" as const },
+  { id: "c2", amount: 1500, bonus: 100, price: "R$ 9,90", size: "md" as const, badge: "+100" },
+  { id: "c3", amount: 5000, bonus: 800, price: "R$ 24,90", size: "lg" as const, badge: "POPULAR" },
+  { id: "c4", amount: 15000, bonus: 4000, price: "R$ 74,90", size: "xl" as const, badge: "MELHOR" },
 ];
 
-const GEM_PACKS: CoinPack[] = [
-  { id: "g1", amount: 30, bonus: 0, price: "R$ 4,90", color: game.gem, size: "sm" },
-  { id: "g2", amount: 90, bonus: 10, price: "R$ 9,90", color: game.gem, size: "md", badge: "+10" },
-  { id: "g3", amount: 300, bonus: 50, price: "R$ 24,90", color: game.gem, size: "lg", badge: "POPULAR" },
-  { id: "g4", amount: 1000, bonus: 250, price: "R$ 74,90", color: game.gem, size: "xl", badge: "MELHOR" },
-];
-
-const SKINS = [
-  { id: "classic", name: "Clássico", cost: 0, currency: "coins" as const, color: game.primary, icon: "shield-alt" as const },
-  { id: "imperial", name: "Imperial", cost: 800, currency: "coins" as const, color: game.gold, icon: "crown" as const },
-  { id: "neon", name: "Neon", cost: 50, currency: "gems" as const, color: game.gem, icon: "bolt" as const },
-  { id: "shadow", name: "Sombra", cost: 80, currency: "gems" as const, color: game.purple, icon: "ghost" as const },
-  { id: "blood", name: "Sangue", cost: 1500, currency: "coins" as const, color: game.danger, icon: "fire" as const },
-  { id: "verde", name: "Esmeralda", cost: 60, currency: "gems" as const, color: game.success, icon: "leaf" as const },
-];
-
-const REWARDED_ADS = [
-  { id: "ad-coins", label: "Moedas", reward: 200, type: "coins" as const, icon: "coins" as const, color: game.gold },
-  { id: "ad-gems", label: "Gemas", reward: 5, type: "gems" as const, icon: "gem" as const, color: game.gem },
-  { id: "ad-energy", label: "Energia", reward: 2, type: "energy" as const, icon: "bolt" as const, color: game.energy },
+const GEM_PACKS = [
+  { id: "g1", amount: 30, bonus: 0, price: "R$ 4,90", size: "sm" as const },
+  { id: "g2", amount: 90, bonus: 10, price: "R$ 9,90", size: "md" as const, badge: "+10" },
+  { id: "g3", amount: 300, bonus: 50, price: "R$ 24,90", size: "lg" as const, badge: "POPULAR" },
+  { id: "g4", amount: 1000, bonus: 250, price: "R$ 74,90", size: "xl" as const, badge: "MELHOR" },
 ];
 
 const BOOSTERS = [
-  { id: "b1", name: "Boost Tropas 2x", desc: "Dobra a produção por 1 partida", cost: 80, icon: "users" as const, color: game.success },
-  { id: "b2", name: "Energia Cheia", desc: "Recarrega energia ao máximo", cost: 30, icon: "bolt" as const, color: game.energy },
-  { id: "b3", name: "Pacote Combate", desc: "+3 bombas e +3 escudos", cost: 120, icon: "fist-raised" as const, color: game.danger },
+  { id: "b1", name: "Boost Tropas 2x", desc: "Dobra a produção por 1 partida", cost: 80, stars: 1, icon: "users" as const, color: "#3FD0FF" },
+  { id: "b2", name: "Energia Cheia", desc: "Recarrega energia ao máximo", cost: 30, stars: 2, icon: "bolt" as const, color: "#FF6AC1" },
+  { id: "b3", name: "Pacote Combate", desc: "+3 bombas e +3 escudos", cost: 120, stars: 3, icon: "fist-raised" as const, color: "#FF8E2E" },
 ];
 
+const REWARDED_ADS = [
+  { id: "ad-coins", label: "200 Moedas", reward: 200, type: "coins" as const, icon: "coins" as const, color: game.gold },
+  { id: "ad-gems", label: "5 Gemas", reward: 5, type: "gems" as const, icon: "gem" as const, color: game.gem },
+  { id: "ad-energy", label: "Recarregar Energia", reward: 30, type: "energy" as const, icon: "bolt" as const, color: game.energy },
+];
+
+function useDailyTimer() {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const tomorrow = new Date();
+  tomorrow.setHours(24, 0, 0, 0);
+  const ms = tomorrow.getTime() - now;
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  const s = Math.floor((ms % 60_000) / 1_000);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 export default function ShopScreen() {
-  const router = useRouter();
   const {
     profile,
     addCoins,
     addGems,
     refillEnergy,
-    spendCoins,
     spendGems,
-    buySkin,
-    selectSkin,
     activateVip,
     buySkill,
   } = useGame();
-  const [tab, setTab] = useState<Tab>("destaques");
   const [adShowing, setAdShowing] = useState<(typeof REWARDED_ADS)[number] | null>(null);
   const [adProgress, setAdProgress] = useState(0);
+  const [starterClaimed, setStarterClaimed] = useState(false);
   const adAnim = useRef(new Animated.Value(0)).current;
-
-  // Featured banner pulse
-  const pulse = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1.04,
-          duration: 1100,
-          useNativeDriver: true,
-          easing: Easing.inOut(Easing.ease),
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 1100,
-          useNativeDriver: true,
-          easing: Easing.inOut(Easing.ease),
-        }),
-      ]),
-    ).start();
-  }, [pulse]);
+  const dailyTime = useDailyTimer();
 
   useEffect(() => {
     if (!adShowing) return;
@@ -135,21 +104,9 @@ export default function ShopScreen() {
     );
   };
 
-  const handleSkin = (s: (typeof SKINS)[number]) => {
-    if (profile.ownedSkins.includes(s.id)) {
-      selectSkin(s.id);
-      return;
-    }
-    if (!buySkin(s.id, s.cost, s.currency)) {
-      Alert.alert("Saldo insuficiente");
-      return;
-    }
-    selectSkin(s.id);
-  };
-
   const handleBooster = (b: (typeof BOOSTERS)[number]) => {
     if (!spendGems(b.cost)) {
-      Alert.alert("Gemas insuficientes");
+      Alert.alert("Gemas insuficientes", "Assista um anúncio para ganhar gemas grátis.");
       return;
     }
     if (b.id === "b2") refillEnergy();
@@ -160,10 +117,16 @@ export default function ShopScreen() {
       buySkill("skillShield", 0);
       buySkill("skillShield", 0);
       buySkill("skillShield", 0);
-      // Reset gems removed since we already spent them; manually add the items
-      addGems(0);
     }
     Alert.alert("Booster ativo!", b.name);
+  };
+
+  const claimStarter = () => {
+    if (starterClaimed) return;
+    addCoins(1000);
+    addGems(20);
+    setStarterClaimed(true);
+    Alert.alert("Resgatado!", "1.000 moedas + 20 gemas");
   };
 
   return (
@@ -186,333 +149,251 @@ export default function ShopScreen() {
         </View>
       </View>
 
-      {/* Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabs}
-      >
-        {(
-          [
-            ["destaques", "🔥 Destaques"],
-            ["moedas", "🪙 Moedas"],
-            ["gemas", "💎 Gemas"],
-            ["aviões", "✈️ Aviões"],
-            ["skins", "🎨 Skins"],
-            ["ads", "🎁 Grátis"],
-          ] as const
-        ).map(([t, label]) => (
-          <Pressable
-            key={t}
-            onPress={() => setTab(t)}
-            style={[styles.tab, tab === t && styles.tabActive]}
+      <ScrollView contentContainerStyle={{ padding: 14, gap: 18, paddingBottom: 40 }}>
+        {/* SECTION: Starter Pack */}
+        <View>
+          <Text style={styles.sectionTitle}>PACK INICIANTE</Text>
+          <LinearGradient
+            colors={[game.purple + "55", game.gold + "33", game.surface]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.starterMega}
           >
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {label}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <ScrollView contentContainerStyle={{ padding: 14, gap: 14, paddingBottom: 40 }}>
-        {tab === "destaques" && (
-          <>
-            {/* VIP / Featured Pass banner */}
-            <Animated.View style={{ transform: [{ scale: pulse }] }}>
-              <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    "Passe VIP",
-                    "Energia máxima dobrada + 50% mais XP. Aceita ativar a versão demo?",
-                    [
-                      { text: "Cancelar", style: "cancel" },
-                      {
-                        text: "Ativar demo",
-                        onPress: () => {
-                          activateVip();
-                          Alert.alert("VIP ativo!");
-                        },
-                      },
-                    ],
-                  )
-                }
-              >
-                <LinearGradient
-                  colors={[game.purple, game.primary, game.gold]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.heroBanner}
-                >
-                  <View style={styles.heroLeft}>
-                    <View style={styles.heroBadge}>
-                      <Text style={styles.heroBadgeText}>EXCLUSIVO</Text>
-                    </View>
-                    <Text style={styles.heroTitle}>PASSE VIP</Text>
-                    <Text style={styles.heroSub}>
-                      Energia ×2 · XP +50% · Sem anúncios
-                    </Text>
-                    <View style={styles.heroPriceRow}>
-                      <Text style={styles.heroPriceOld}>R$ 39,90</Text>
-                      <Text style={styles.heroPrice}>R$ 19,90</Text>
-                    </View>
-                  </View>
-                  <View style={styles.heroIcon}>
-                    <FontAwesome5 name="crown" size={56} color={game.gold} />
-                  </View>
-                </LinearGradient>
-              </Pressable>
-            </Animated.View>
-
-            {/* Starter Pack */}
-            <Pressable
-              onPress={() => {
-                addCoins(1000);
-                addGems(10);
-                Alert.alert("Resgatado!", "1.000 moedas + 10 gemas");
-              }}
-            >
-              <LinearGradient
-                colors={[game.success + "55", game.surface]}
-                style={styles.starterCard}
-              >
-                <View style={styles.starterIcon}>
-                  <FontAwesome5 name="gift" size={32} color={game.success} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.starterTitleRow}>
-                    <Text style={styles.starterTitle}>Pacote Iniciante</Text>
-                    <View style={[styles.tag, { backgroundColor: game.success }]}>
-                      <Text style={styles.tagText}>GRÁTIS</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.starterDesc}>
-                    1.000 moedas + 10 gemas — 1× por conta
-                  </Text>
-                </View>
-                <FontAwesome5 name="chevron-right" size={16} color={game.text} />
-              </LinearGradient>
-            </Pressable>
-
-            {/* Daily Deals */}
-            <Text style={styles.sectionTitle}>OFERTAS DO DIA</Text>
-            <View style={styles.dealRow}>
-              <DealCard
-                title="Combo Guerra"
-                desc="2.000 moedas + 50 gemas"
-                price="R$ 14,90"
-                color={game.danger}
-                icon="bomb"
-                onPress={() => handlePremium("Combo Guerra", "R$ 14,90")}
-              />
-              <DealCard
-                title="Combo Frota"
-                desc="Drone + 100 gemas"
-                price="R$ 29,90"
-                color={game.gem}
-                icon="rocket"
-                onPress={() => handlePremium("Combo Frota", "R$ 29,90")}
-              />
+            <View style={styles.starterMegaHeader}>
+              <View style={[styles.starBadge, { backgroundColor: game.gold }]}>
+                <FontAwesome5 name="crown" size={11} color={game.bgDeep} />
+                <Text style={styles.starBadgeText}>OFERTA ÚNICA</Text>
+              </View>
+              <Text style={styles.starterMegaTitle}>BEM-VINDO COMANDANTE</Text>
+              <Text style={styles.starterMegaSub}>Pacote completo para começar</Text>
             </View>
 
-            {/* Boosters */}
-            <Text style={styles.sectionTitle}>BOOSTERS</Text>
+            <View style={styles.starterItems}>
+              <StarterItem icon="gem" amount="50" label="Gemas" color={game.gem} />
+              <StarterItem icon="coins" amount="2.000" label="Moedas" color={game.gold} />
+              <StarterItem icon="bolt" amount="3" label="Boosters" color={game.energy} />
+              <StarterItem icon="bomb" amount="3" label="Bombas" color={game.danger} />
+            </View>
+
+            <View style={styles.starterActions}>
+              <Pressable
+                onPress={() => handlePremium("Pack Iniciante", "R$ 9,90")}
+                style={({ pressed }) => [styles.priceBtn, { opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Text style={styles.pricePixed}>R$ 9,90</Text>
+              </Pressable>
+              <Pressable
+                disabled={starterClaimed}
+                onPress={claimStarter}
+                style={({ pressed }) => [
+                  styles.adBtn,
+                  starterClaimed && { opacity: 0.4 },
+                  { opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <FontAwesome5 name="play" size={11} color={game.text} />
+                <Text style={styles.adBtnText}>
+                  {starterClaimed ? "RESGATADO" : "GRÁTIS"}
+                </Text>
+              </Pressable>
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* VIP banner */}
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              "Passe VIP",
+              "Energia máxima 60 + 50% mais XP. Aceita ativar a versão demo?",
+              [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Ativar demo", onPress: () => { activateVip(); Alert.alert("VIP ativo!"); } },
+              ],
+            )
+          }
+        >
+          <LinearGradient
+            colors={[game.purple, game.primary, game.gold]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroBanner}
+          >
+            <View style={styles.heroLeft}>
+              <View style={styles.heroBadge}>
+                <Text style={styles.heroBadgeText}>EXCLUSIVO</Text>
+              </View>
+              <Text style={styles.heroTitle}>PASSE VIP</Text>
+              <Text style={styles.heroSub}>Energia ×2 · XP +50% · Sem ads</Text>
+              <View style={styles.heroPriceRow}>
+                <Text style={styles.heroPriceOld}>R$ 39,90</Text>
+                <Text style={styles.heroPrice}>R$ 19,90</Text>
+              </View>
+            </View>
+            <View style={styles.heroIcon}>
+              <FontAwesome5 name="crown" size={56} color={game.gold} />
+            </View>
+          </LinearGradient>
+        </Pressable>
+
+        {/* SECTION: Boosters */}
+        <View>
+          <Text style={styles.sectionTitle}>BOOSTERS</Text>
+          <View style={styles.boosterGrid}>
             {BOOSTERS.map((b) => (
               <Pressable
                 key={b.id}
                 onPress={() => handleBooster(b)}
                 style={({ pressed }) => [
                   styles.boosterCard,
-                  { borderColor: b.color + "55", opacity: pressed ? 0.85 : 1 },
+                  { borderColor: b.color, opacity: pressed ? 0.85 : 1 },
                 ]}
               >
-                <View style={[styles.boosterIcon, { backgroundColor: b.color + "33" }]}>
-                  <FontAwesome5 name={b.icon} size={22} color={b.color} />
+                <LinearGradient
+                  colors={[b.color + "33", "transparent"]}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View style={styles.starsRow}>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <FontAwesome5
+                      key={i}
+                      name="star"
+                      size={9}
+                      color={i < b.stars ? game.gold : game.muted}
+                      solid={i < b.stars}
+                    />
+                  ))}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.boosterTitle}>{b.name}</Text>
-                  <Text style={styles.boosterDesc}>{b.desc}</Text>
+                <View style={[styles.boosterIconBig, { backgroundColor: b.color + "44" }]}>
+                  <FontAwesome5 name={b.icon} size={28} color={b.color} />
                 </View>
-                <View style={styles.boosterPrice}>
-                  <FontAwesome5 name="gem" size={11} color={game.gem} />
-                  <Text style={styles.boosterPriceText}>{b.cost}</Text>
+                <Text style={styles.boosterName}>{b.name}</Text>
+                <Text style={styles.boosterDescSm}>{b.desc}</Text>
+                <View style={[styles.priceChip, { backgroundColor: b.color }]}>
+                  <FontAwesome5 name="gem" size={10} color={game.text} />
+                  <Text style={styles.priceChipText}>{b.cost}</Text>
                 </View>
               </Pressable>
             ))}
-          </>
-        )}
-
-        {tab === "moedas" && (
-          <View style={styles.packGrid}>
-            {COIN_PACKS.map((p) => (
-              <PackCard
-                key={p.id}
-                pack={p}
-                icon="coins"
-                onPress={() => handlePremium(`${p.amount} moedas`, p.price)}
-              />
-            ))}
           </View>
-        )}
+        </View>
 
-        {tab === "gemas" && (
+        {/* SECTION: Daily Deals */}
+        <View>
+          <View style={styles.dailyHeader}>
+            <Text style={styles.sectionTitle}>OFERTAS DIÁRIAS</Text>
+            <View style={styles.timerPill}>
+              <FontAwesome5 name="clock" size={10} color={game.gold} />
+              <Text style={styles.timerText}>{dailyTime}</Text>
+            </View>
+          </View>
+          <View style={styles.dealRow}>
+            <DealCard
+              title="Combo Guerra"
+              desc="2.000 moedas + 50 gemas"
+              price="R$ 14,90"
+              color={game.danger}
+              icon="bomb"
+              onPress={() => handlePremium("Combo Guerra", "R$ 14,90")}
+            />
+            <DealCard
+              title="Combo Frota"
+              desc="Drone + 100 gemas"
+              price="R$ 29,90"
+              color={game.gem}
+              icon="rocket"
+              onPress={() => handlePremium("Combo Frota", "R$ 29,90")}
+            />
+          </View>
+        </View>
+
+        {/* SECTION: Diamonds (Gemas) */}
+        <View>
+          <View style={styles.dailyHeader}>
+            <Text style={styles.sectionTitle}>DIAMANTES</Text>
+            <Pressable
+              onPress={() => setAdShowing(REWARDED_ADS[1]!)}
+              style={styles.freePill}
+            >
+              <FontAwesome5 name="play" size={9} color={game.gem} />
+              <Text style={[styles.freePillText, { color: game.gem }]}>GRÁTIS</Text>
+            </Pressable>
+          </View>
           <View style={styles.packGrid}>
             {GEM_PACKS.map((p) => (
               <PackCard
                 key={p.id}
-                pack={p}
+                amount={p.amount}
+                bonus={p.bonus}
+                price={p.price}
+                badge={p.badge}
+                size={p.size}
+                color={game.gem}
                 icon="gem"
                 onPress={() => handlePremium(`${p.amount} gemas`, p.price)}
               />
             ))}
           </View>
-        )}
+        </View>
 
-        {tab === "aviões" && (
-          <>
-            <View style={styles.infoBanner}>
-              <FontAwesome5 name="plane" size={18} color={game.gem} />
-              <Text style={styles.infoBannerText}>
-                Compre frotas com moedas para acelerar ataques de longa distância
-              </Text>
-            </View>
+        {/* SECTION: Coins (Moedas) */}
+        <View>
+          <View style={styles.dailyHeader}>
+            <Text style={styles.sectionTitle}>MOEDAS</Text>
             <Pressable
-              onPress={() => router.push("/planes")}
-              style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.85 : 1 }]}
+              onPress={() => setAdShowing(REWARDED_ADS[0]!)}
+              style={styles.freePill}
             >
-              <LinearGradient
-                colors={[game.gem, "#3FA3FF"]}
-                style={styles.ctaInner}
-              >
-                <FontAwesome5 name="paper-plane" size={20} color={game.text} />
-                <Text style={styles.ctaText}>VER FROTA AÉREA</Text>
-                <FontAwesome5 name="chevron-right" size={14} color={game.text} />
-              </LinearGradient>
+              <FontAwesome5 name="play" size={9} color={game.gold} />
+              <Text style={[styles.freePillText, { color: game.gold }]}>GRÁTIS</Text>
             </Pressable>
-
-            <Text style={styles.sectionTitle}>SUPER FROTAS</Text>
-            {[
-              { name: "Esquadrão Elite", desc: "5 aviões Tier 3 simultâneos", price: "R$ 19,90", color: game.gold },
-              { name: "Frota Imperial", desc: "Aviões dourados com efeito visual", price: "R$ 29,90", color: game.purple },
-            ].map((s) => (
-              <Pressable
-                key={s.name}
-                onPress={() => handlePremium(s.name, s.price)}
-                style={({ pressed }) => [
-                  styles.boosterCard,
-                  { borderColor: s.color + "55", opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <View style={[styles.boosterIcon, { backgroundColor: s.color + "33" }]}>
-                  <FontAwesome5 name="fighter-jet" size={22} color={s.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.boosterTitle}>{s.name}</Text>
-                  <Text style={styles.boosterDesc}>{s.desc}</Text>
-                </View>
-                <View style={[styles.priceTag, { backgroundColor: s.color }]}>
-                  <Text style={styles.priceTagText}>{s.price}</Text>
-                </View>
-              </Pressable>
-            ))}
-          </>
-        )}
-
-        {tab === "skins" && (
-          <View style={styles.skinGrid}>
-            {SKINS.map((s) => {
-              const owned = profile.ownedSkins.includes(s.id);
-              const selected = profile.selectedSkin === s.id;
-              return (
-                <Pressable
-                  key={s.id}
-                  onPress={() => handleSkin(s)}
-                  style={[
-                    styles.skinCard,
-                    selected && { borderColor: game.gold, borderWidth: 2 },
-                  ]}
-                >
-                  <LinearGradient
-                    colors={[s.color + "55", "transparent"]}
-                    style={StyleSheet.absoluteFillObject}
-                  />
-                  <View style={[styles.skinSwatch, { backgroundColor: s.color }]}>
-                    <FontAwesome5 name={s.icon} size={32} color={game.text} />
-                  </View>
-                  <Text style={styles.skinName}>{s.name}</Text>
-                  {owned ? (
-                    <View
-                      style={[
-                        styles.skinAction,
-                        {
-                          backgroundColor: selected
-                            ? game.gold
-                            : game.surfaceElevated,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.skinActionText,
-                          { color: selected ? game.bgDeep : game.text },
-                        ]}
-                      >
-                        {selected ? "EQUIPADO" : "USAR"}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={styles.skinPrice}>
-                      <FontAwesome5
-                        name={s.currency === "gems" ? "gem" : "coins"}
-                        size={10}
-                        color={s.currency === "gems" ? game.gem : game.gold}
-                      />
-                      <Text style={styles.skinPriceText}>{s.cost}</Text>
-                    </View>
-                  )}
-                </Pressable>
-              );
-            })}
           </View>
-        )}
-
-        {tab === "ads" && (
-          <>
-            <View style={styles.infoBanner}>
-              <FontAwesome5 name="play-circle" size={18} color={game.gold} />
-              <Text style={styles.infoBannerText}>
-                Assista um anúncio curto e ganhe recompensa grátis
-              </Text>
-            </View>
-            {REWARDED_ADS.map((ad) => (
-              <Pressable
-                key={ad.id}
-                onPress={() => setAdShowing(ad)}
-                style={({ pressed }) => [
-                  styles.adCard,
-                  { borderColor: ad.color + "55", opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <View style={[styles.boosterIcon, { backgroundColor: ad.color + "33" }]}>
-                  <FontAwesome5 name="play" size={22} color={ad.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.boosterTitle}>Anúncio Premiado</Text>
-                  <Text style={styles.boosterDesc}>
-                    Ganhe {ad.reward} {ad.label.toLowerCase()}
-                  </Text>
-                </View>
-                <View style={[styles.adReward, { backgroundColor: ad.color + "33" }]}>
-                  <FontAwesome5 name={ad.icon} size={11} color={ad.color} />
-                  <Text style={[styles.adRewardText, { color: ad.color }]}>
-                    +{ad.reward}
-                  </Text>
-                </View>
-              </Pressable>
+          <View style={styles.packGrid}>
+            {COIN_PACKS.map((p) => (
+              <PackCard
+                key={p.id}
+                amount={p.amount}
+                bonus={p.bonus}
+                price={p.price}
+                badge={p.badge}
+                size={p.size}
+                color={game.gold}
+                icon="coins"
+                onPress={() => handlePremium(`${p.amount} moedas`, p.price)}
+              />
             ))}
-          </>
-        )}
+          </View>
+        </View>
+
+        {/* SECTION: Free Rewards */}
+        <View>
+          <Text style={styles.sectionTitle}>RECOMPENSAS GRÁTIS</Text>
+          {REWARDED_ADS.map((ad) => (
+            <Pressable
+              key={ad.id}
+              onPress={() => setAdShowing(ad)}
+              style={({ pressed }) => [
+                styles.adCard,
+                { borderColor: ad.color + "55", opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <View style={[styles.boosterIcon, { backgroundColor: ad.color + "33" }]}>
+                <FontAwesome5 name={ad.icon} size={22} color={ad.color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.boosterTitle}>{ad.label}</Text>
+                <Text style={styles.boosterDesc}>Assista um vídeo curto</Text>
+              </View>
+              <View style={[styles.watchBtn, { backgroundColor: ad.color }]}>
+                <FontAwesome5 name="play" size={11} color={game.text} />
+                <Text style={styles.watchBtnText}>VER</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
 
+      {/* Ad modal */}
       <Modal visible={!!adShowing} transparent animationType="fade">
         <View style={styles.adModal}>
           <View style={styles.adBox}>
@@ -544,12 +425,44 @@ export default function ShopScreen() {
   );
 }
 
+function StarterItem({
+  icon,
+  amount,
+  label,
+  color,
+}: {
+  icon: keyof typeof FontAwesome5.glyphMap;
+  amount: string;
+  label: string;
+  color: string;
+}) {
+  return (
+    <View style={styles.starterItem}>
+      <View style={[styles.starterItemIcon, { backgroundColor: color + "33" }]}>
+        <FontAwesome5 name={icon} size={18} color={color} />
+      </View>
+      <Text style={styles.starterItemAmount}>{amount}</Text>
+      <Text style={styles.starterItemLabel}>{label}</Text>
+    </View>
+  );
+}
+
 function PackCard({
-  pack,
+  amount,
+  bonus,
+  price,
+  badge,
+  size,
+  color,
   icon,
   onPress,
 }: {
-  pack: CoinPack;
+  amount: number;
+  bonus: number;
+  price: string;
+  badge?: string;
+  size: "sm" | "md" | "lg" | "xl";
+  color: string;
   icon: keyof typeof FontAwesome5.glyphMap;
   onPress: () => void;
 }) {
@@ -559,19 +472,19 @@ function PackCard({
     lg: { iconSize: 44, count: 3 },
     xl: { iconSize: 56, count: 4 },
   };
-  const cfg = sizeMap[pack.size];
+  const cfg = sizeMap[size];
   return (
     <Pressable onPress={onPress} style={styles.packCardWrap}>
       <LinearGradient
-        colors={[pack.color + "44", game.surface]}
+        colors={[color + "44", game.surface]}
         style={[
           styles.packCard,
-          pack.size === "xl" && { borderColor: pack.color, borderWidth: 2 },
+          size === "xl" && { borderColor: color, borderWidth: 2 },
         ]}
       >
-        {pack.badge && (
-          <View style={[styles.packBadge, { backgroundColor: pack.color }]}>
-            <Text style={styles.packBadgeText}>{pack.badge}</Text>
+        {badge && (
+          <View style={[styles.packBadge, { backgroundColor: color }]}>
+            <Text style={styles.packBadgeText}>{badge}</Text>
           </View>
         )}
         <View style={styles.packIconStack}>
@@ -580,7 +493,7 @@ function PackCard({
               key={i}
               name={icon}
               size={cfg.iconSize}
-              color={pack.color}
+              color={color}
               style={{
                 marginLeft: i === 0 ? 0 : -cfg.iconSize * 0.5,
                 marginTop: i * 4,
@@ -590,15 +503,13 @@ function PackCard({
           ))}
         </View>
         <Text style={styles.packAmount}>
-          {pack.amount.toLocaleString("pt-BR")}
+          {amount.toLocaleString("pt-BR")}
         </Text>
-        {pack.bonus > 0 && (
-          <Text style={[styles.packBonus, { color: pack.color }]}>
-            + {pack.bonus} bônus
-          </Text>
+        {bonus > 0 && (
+          <Text style={[styles.packBonus, { color }]}>+ {bonus} bônus</Text>
         )}
         <View style={styles.packPrice}>
-          <Text style={styles.packPriceText}>{pack.price}</Text>
+          <Text style={styles.packPriceText}>{price}</Text>
         </View>
       </LinearGradient>
     </Pressable>
@@ -626,15 +537,13 @@ function DealCard({
         colors={[color + "44", game.surface]}
         style={styles.dealInner}
       >
-        <View style={styles.dealTimerBadge}>
-          <FontAwesome5 name="clock" size={9} color={game.gold} />
-          <Text style={styles.dealTimerText}>23h</Text>
+        <View style={[styles.dealIcon, { backgroundColor: color + "33" }]}>
+          <FontAwesome5 name={icon} size={26} color={color} />
         </View>
-        <FontAwesome5 name={icon} size={36} color={color} />
         <Text style={styles.dealTitle}>{title}</Text>
         <Text style={styles.dealDesc}>{desc}</Text>
-        <View style={[styles.dealPrice, { backgroundColor: color }]}>
-          <Text style={styles.dealPriceText}>{price}</Text>
+        <View style={[styles.priceChip, { backgroundColor: color, marginTop: 4 }]}>
+          <Text style={styles.priceChipText}>{price}</Text>
         </View>
       </LinearGradient>
     </Pressable>
@@ -645,18 +554,20 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: game.bg },
   wallet: {
     flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingTop: 12,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    justifyContent: "center",
   },
   walletPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: game.surface,
+    paddingVertical: 5,
     borderRadius: 12,
+    backgroundColor: game.surface,
     borderWidth: 1,
     borderColor: game.border,
   },
@@ -665,64 +576,137 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 12,
   },
-  tabs: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
+  sectionTitle: {
+    color: game.textDim,
+    fontFamily: "Inter_900Black",
+    fontSize: 12,
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  starterMega: {
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: game.gold + "77",
+    gap: 10,
+  },
+  starterMegaHeader: { gap: 4 },
+  starBadge: {
+    flexDirection: "row",
+    alignSelf: "flex-start",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  starBadgeText: {
+    color: game.bgDeep,
+    fontFamily: "Inter_900Black",
+    fontSize: 9,
+    letterSpacing: 1,
+  },
+  starterMegaTitle: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
+    fontSize: 18,
+    letterSpacing: 1,
+  },
+  starterMegaSub: {
+    color: game.textDim,
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+  },
+  starterItems: {
+    flexDirection: "row",
     gap: 6,
   },
-  tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: game.surface,
-    borderWidth: 1,
-    borderColor: game.border,
+  starterItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 3,
+    padding: 8,
+    backgroundColor: game.bgDeep + "AA",
+    borderRadius: 10,
   },
-  tabActive: {
-    backgroundColor: game.gold + "22",
-    borderColor: game.gold,
+  starterItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  tabText: {
+  starterItemAmount: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
+    fontSize: 13,
+  },
+  starterItemLabel: {
     color: game.textDim,
-    fontFamily: "Inter_700Bold",
-    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    fontSize: 9,
   },
-  tabTextActive: { color: game.gold },
-
+  starterActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  priceBtn: {
+    flex: 1,
+    backgroundColor: game.gold,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  pricePixed: {
+    color: game.bgDeep,
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
+  },
+  adBtn: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: game.success,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  adBtnText: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
+    fontSize: 14,
+  },
   heroBanner: {
     flexDirection: "row",
-    padding: 18,
-    borderRadius: 22,
-    alignItems: "center",
-    minHeight: 130,
+    padding: 14,
+    borderRadius: 18,
+    gap: 10,
     overflow: "hidden",
   },
   heroLeft: { flex: 1, gap: 4 },
   heroBadge: {
     alignSelf: "flex-start",
+    backgroundColor: game.bgDeep + "AA",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    backgroundColor: "#000000AA",
-    marginBottom: 4,
   },
   heroBadgeText: {
     color: game.gold,
     fontFamily: "Inter_900Black",
     fontSize: 9,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   heroTitle: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 28,
-    letterSpacing: 2,
+    fontSize: 22,
+    letterSpacing: 1.5,
   },
   heroSub: {
     color: game.text,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-    opacity: 0.9,
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
   },
   heroPriceRow: {
     flexDirection: "row",
@@ -731,116 +715,124 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   heroPriceOld: {
-    color: game.text,
+    color: game.textDim,
     fontFamily: "Inter_500Medium",
     fontSize: 12,
     textDecorationLine: "line-through",
-    opacity: 0.7,
   },
   heroPrice: {
-    color: game.text,
+    color: game.gold,
     fontFamily: "Inter_900Black",
-    fontSize: 22,
+    fontSize: 18,
   },
   heroIcon: {
     width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#000000AA",
     alignItems: "center",
     justifyContent: "center",
   },
-
-  starterCard: {
+  boosterGrid: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    padding: 14,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: game.success + "55",
-  },
-  starterIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: game.success + "33",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  starterTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 8,
   },
-  starterTitle: {
-    color: game.text,
-    fontFamily: "Inter_700Bold",
-    fontSize: 15,
-  },
-  starterDesc: {
-    color: game.textDim,
-    fontFamily: "Inter_500Medium",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  tag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 5,
-  },
-  tagText: {
-    color: game.bgDeep,
-    fontFamily: "Inter_900Black",
-    fontSize: 9,
-  },
-
-  sectionTitle: {
-    color: game.textDim,
-    fontFamily: "Inter_900Black",
-    fontSize: 11,
-    letterSpacing: 2,
-    marginTop: 4,
-  },
-
-  dealRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  dealCard: {
+  boosterCard: {
     flex: 1,
-    borderRadius: 16,
+    padding: 10,
+    borderRadius: 14,
+    backgroundColor: game.surface,
+    borderWidth: 2,
     overflow: "hidden",
-  },
-  dealInner: {
-    padding: 12,
     alignItems: "center",
     gap: 6,
-    borderWidth: 1,
-    borderColor: game.border,
-    borderRadius: 16,
-    minHeight: 170,
   },
-  dealTimerBadge: {
+  starsRow: {
+    flexDirection: "row",
+    gap: 2,
+  },
+  boosterIconBig: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  boosterName: {
+    color: game.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    textAlign: "center",
+  },
+  boosterDescSm: {
+    color: game.textDim,
+    fontFamily: "Inter_500Medium",
+    fontSize: 9,
+    textAlign: "center",
+    minHeight: 22,
+  },
+  priceChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: game.bgDeep,
-    alignSelf: "flex-end",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
-  dealTimerText: {
+  priceChipText: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
+    fontSize: 11,
+  },
+  dailyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  timerPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: game.gold + "22",
+    marginBottom: 8,
+  },
+  timerText: {
     color: game.gold,
     fontFamily: "Inter_700Bold",
+    fontSize: 11,
+  },
+  freePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: game.surface,
+    borderWidth: 1,
+    borderColor: game.border,
+    marginBottom: 8,
+  },
+  freePillText: {
+    fontFamily: "Inter_900Black",
     fontSize: 9,
+    letterSpacing: 1,
+  },
+  dealRow: { flexDirection: "row", gap: 10 },
+  dealCard: { flex: 1, borderRadius: 14, overflow: "hidden" },
+  dealInner: { padding: 12, alignItems: "center", gap: 4 },
+  dealIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
   },
   dealTitle: {
     color: game.text,
-    fontFamily: "Inter_900Black",
-    fontSize: 13,
-    textAlign: "center",
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
   },
   dealDesc: {
     color: game.textDim,
@@ -848,309 +840,166 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: "center",
   },
-  dealPrice: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    marginTop: 4,
-  },
-  dealPriceText: {
-    color: game.bgDeep,
-    fontFamily: "Inter_900Black",
-    fontSize: 12,
-  },
-
-  boosterCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: game.surface,
-    borderWidth: 1.5,
-  },
-  boosterIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  boosterTitle: {
-    color: game.text,
-    fontFamily: "Inter_700Bold",
-    fontSize: 14,
-  },
-  boosterDesc: {
-    color: game.textDim,
-    fontFamily: "Inter_500Medium",
-    fontSize: 11,
-    marginTop: 2,
-  },
-  boosterPrice: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: game.bgDeep,
-  },
-  boosterPriceText: {
-    color: game.text,
-    fontFamily: "Inter_900Black",
-    fontSize: 13,
-  },
-  priceTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  priceTagText: {
-    color: game.bgDeep,
-    fontFamily: "Inter_900Black",
-    fontSize: 11,
-  },
-
   packGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
   },
-  packCardWrap: {
-    width: "48%",
-  },
+  packCardWrap: { width: "47%" },
   packCard: {
-    padding: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: game.border,
+    padding: 12,
+    borderRadius: 16,
+    minHeight: 160,
     alignItems: "center",
     gap: 6,
-    minHeight: 200,
     overflow: "hidden",
   },
   packBadge: {
     position: "absolute",
     top: 8,
     right: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
   },
   packBadgeText: {
     color: game.bgDeep,
     fontFamily: "Inter_900Black",
     fontSize: 9,
-    letterSpacing: 0.5,
   },
   packIconStack: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    height: 70,
-    marginTop: 8,
+    height: 64,
+    alignItems: "center",
   },
   packAmount: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 22,
-    marginTop: 6,
+    fontSize: 18,
   },
   packBonus: {
     fontFamily: "Inter_700Bold",
     fontSize: 11,
   },
   packPrice: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: game.gold,
+    backgroundColor: game.bgDeep + "AA",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 10,
+    marginTop: 4,
   },
   packPriceText: {
-    color: game.bgDeep,
-    fontFamily: "Inter_900Black",
-    fontSize: 13,
-  },
-
-  infoBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 12,
-    backgroundColor: game.gold + "15",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: game.gold + "44",
-  },
-  infoBannerText: {
-    color: game.text,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-    flex: 1,
-  },
-
-  cta: { borderRadius: 14, overflow: "hidden" },
-  ctaInner: {
-    paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-  ctaText: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 14,
-    letterSpacing: 1.2,
-  },
-
-  skinGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  skinCard: {
-    width: "48%",
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: game.surface,
-    borderWidth: 1,
-    borderColor: game.border,
-    alignItems: "center",
-    gap: 8,
-    overflow: "hidden",
-  },
-  skinSwatch: {
-    width: 84,
-    height: 84,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  skinName: {
-    color: game.text,
-    fontFamily: "Inter_700Bold",
-    fontSize: 13,
-  },
-  skinAction: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  skinActionText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 11,
-    letterSpacing: 0.8,
-  },
-  skinPrice: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: game.bgDeep,
-  },
-  skinPriceText: {
-    color: game.text,
-    fontFamily: "Inter_700Bold",
     fontSize: 12,
   },
-
   adCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 14,
-    borderRadius: 16,
+    padding: 12,
+    borderRadius: 14,
     backgroundColor: game.surface,
     borderWidth: 1.5,
+    marginBottom: 8,
   },
-  adReward: {
+  boosterIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  boosterTitle: {
+    color: game.text,
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+  },
+  boosterDesc: {
+    color: game.textDim,
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+  },
+  watchBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
   },
-  adRewardText: {
+  watchBtnText: {
+    color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 13,
+    fontSize: 11,
+    letterSpacing: 1,
   },
-
   adModal: {
     flex: 1,
-    backgroundColor: "#000000DD",
+    backgroundColor: "#000A",
     alignItems: "center",
     justifyContent: "center",
-    padding: 18,
+    padding: 24,
   },
   adBox: {
-    width: "100%",
-    maxWidth: 360,
-    padding: 18,
     backgroundColor: game.surface,
     borderRadius: 18,
+    padding: 18,
+    width: "100%",
+    maxWidth: 360,
+    alignItems: "center",
+    gap: 12,
     borderWidth: 1,
     borderColor: game.border,
-    gap: 14,
   },
   adTitle: {
     color: game.gold,
-    fontFamily: "Inter_700Bold",
-    fontSize: 11,
+    fontFamily: "Inter_900Black",
+    fontSize: 12,
     letterSpacing: 2,
-    textAlign: "center",
   },
   adVideo: {
+    width: "100%",
     height: 180,
-    borderRadius: 14,
     backgroundColor: game.bgDeep,
-    borderWidth: 1,
-    borderColor: game.gold + "55",
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    padding: 16,
   },
   adVideoText: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 22,
-    letterSpacing: 2,
+    fontSize: 18,
   },
   adVideoSubtext: {
     color: game.textDim,
     fontFamily: "Inter_500Medium",
-    fontSize: 11,
-    textAlign: "center",
+    fontSize: 10,
   },
   adProgressBar: {
+    width: "100%",
     height: 6,
     backgroundColor: game.bgDeep,
     borderRadius: 3,
     overflow: "hidden",
   },
   adProgressFill: {
-    height: "100%",
+    height: 6,
     backgroundColor: game.gold,
   },
   adWait: {
     color: game.textDim,
     fontFamily: "Inter_500Medium",
-    fontSize: 12,
-    textAlign: "center",
+    fontSize: 11,
   },
   adClose: {
-    paddingVertical: 10,
-    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 8,
   },
   adCloseText: {
-    color: game.muted,
+    color: game.textDim,
     fontFamily: "Inter_700Bold",
     fontSize: 12,
-    letterSpacing: 1,
   },
 });
