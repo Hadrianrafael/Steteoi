@@ -4,9 +4,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Easing,
   Image,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -15,7 +17,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BottomNav } from "@/components/BottomNav";
 import { TopBar } from "@/components/TopBar";
 import { game } from "@/constants/colors";
 import { useGame, xpProgress } from "@/contexts/GameContext";
@@ -23,11 +24,14 @@ import { useGame, xpProgress } from "@/contexts/GameContext";
 export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { profile, claimDailyLogin } = useGame();
+  const { profile, claimDailyLogin, refillEnergy, multiplayerUnlocked } = useGame();
   const [reward, setReward] = useState<{
     reward: number;
     type: "coins" | "gems";
   } | null>(null);
+  const [showAd, setShowAd] = useState(false);
+  const [adProgress, setAdProgress] = useState(0);
+  const adAnim = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
   const glow = useRef(new Animated.Value(0)).current;
 
@@ -69,6 +73,29 @@ export default function Home() {
     ).start();
   }, [pulse, glow]);
 
+  useEffect(() => {
+    if (!showAd) return;
+    setAdProgress(0);
+    adAnim.setValue(0);
+    Animated.timing(adAnim, {
+      toValue: 1,
+      duration: 4000,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) {
+        refillEnergy();
+        Alert.alert("Energia recarregada!", "Boa sorte na batalha.");
+        setShowAd(false);
+      }
+    });
+    const id = setInterval(() => {
+      const v = (adAnim as unknown as { _value: number })._value ?? 0;
+      setAdProgress(v);
+    }, 100);
+    return () => clearInterval(id);
+  }, [showAd]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const xpFrac = xpProgress(profile);
 
   const handlePlay = () => {
@@ -78,6 +105,37 @@ export default function Home() {
     }
     router.push("/lobby");
   };
+
+  const handleMultiplayer = () => {
+    if (!multiplayerUnlocked) {
+      Alert.alert(
+        "Multiplayer bloqueado",
+        `Alcance o nível 10 para jogar online com 5 jogadores reais. Nível atual: ${profile.level}.`,
+      );
+      return;
+    }
+    Alert.alert("Em breve", "Servidor multiplayer em manutenção. Volte em breve!");
+  };
+
+  type Quick = {
+    label: string;
+    icon: keyof typeof FontAwesome5.glyphMap;
+    color: string;
+    onPress: () => void;
+    locked?: boolean;
+  };
+  const quickActions: Quick[] = [
+    { label: "LOJA", icon: "store", color: game.gold, onPress: () => router.push("/shop") },
+    { label: "MELHORIAS", icon: "wrench", color: game.success, onPress: () => router.push("/upgrades") },
+    { label: "ARSENAL", icon: "fighter-jet", color: game.gem, onPress: () => router.push("/planes") },
+    {
+      label: multiplayerUnlocked ? "MULTI" : "NV 10",
+      icon: multiplayerUnlocked ? "globe" : "lock",
+      color: multiplayerUnlocked ? game.purple : game.muted,
+      onPress: handleMultiplayer,
+      locked: !multiplayerUnlocked,
+    },
+  ];
 
   return (
     <View style={styles.root}>
@@ -212,15 +270,67 @@ export default function Home() {
         </Animated.View>
 
         {profile.energy < 1 && (
-          <Text style={styles.noEnergy}>
-            Sem energia. Aguarde recarga ou use a loja.
-          </Text>
+          <Pressable
+            onPress={() => setShowAd(true)}
+            style={({ pressed }) => [
+              styles.energyAdBtn,
+              { opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <FontAwesome5 name="play" size={12} color={game.text} />
+            <Text style={styles.energyAdText}>
+              ASSISTIR VÍDEO PARA RECUPERAR ENERGIA
+            </Text>
+          </Pressable>
         )}
+
+        {/* Quick actions */}
+        <View style={styles.quickRow}>
+          {quickActions.map((q) => (
+            <Pressable
+              key={q.label}
+              onPress={q.onPress}
+              style={({ pressed }) => [
+                styles.quickBtn,
+                {
+                  borderColor: q.color + "88",
+                  backgroundColor: q.color + "22",
+                  opacity: pressed ? 0.85 : q.locked ? 0.7 : 1,
+                },
+              ]}
+            >
+              <FontAwesome5 name={q.icon} size={20} color={q.color} />
+              <Text style={[styles.quickLabel, q.locked && { color: game.muted }]}>
+                {q.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
-      <View style={{ paddingBottom: insets.bottom }}>
-        <BottomNav />
-      </View>
+      <View style={{ paddingBottom: insets.bottom + 8 }} />
+
+      <Modal visible={showAd} transparent animationType="fade">
+        <View style={styles.adModal}>
+          <View style={styles.adBox}>
+            <Text style={styles.adTitle}>ANÚNCIO PATROCINADO</Text>
+            <View style={styles.adVideo}>
+              <FontAwesome5 name="bolt" size={64} color={game.energy} />
+              <Text style={styles.adVideoText}>+{profile.maxEnergy} ENERGIA</Text>
+              <Text style={styles.adVideoSubtext}>Recarga total após o vídeo</Text>
+            </View>
+            <View style={styles.adProgressBar}>
+              <View style={[styles.adProgressFill, { width: `${adProgress * 100}%` }]} />
+            </View>
+            <Text style={styles.adWait}>
+              Aguarde {Math.max(0, Math.ceil(4 - adProgress * 4))}s
+            </Text>
+            <Pressable onPress={() => setShowAd(false)} style={styles.adClose}>
+              <Text style={styles.adCloseText}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -231,7 +341,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     justifyContent: "center",
-    gap: 22,
+    gap: 18,
   },
   profileCard: {
     padding: 14,
@@ -342,7 +452,7 @@ const styles = StyleSheet.create({
   titleMain: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 36,
+    fontSize: 32,
     letterSpacing: 3,
   },
   titleUnderline: {
@@ -360,9 +470,9 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   playBtn: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
@@ -372,7 +482,7 @@ const styles = StyleSheet.create({
   playLabel: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 32,
+    fontSize: 30,
     letterSpacing: 4,
   },
   playEnergyTag: {
@@ -389,10 +499,79 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     fontSize: 12,
   },
-  noEnergy: {
-    color: game.danger,
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-    textAlign: "center",
+  energyAdBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: game.success,
   },
+  energyAdText: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
+    fontSize: 12,
+    letterSpacing: 1,
+  },
+  quickRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  quickBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: "center",
+    gap: 6,
+  },
+  quickLabel: {
+    color: game.text,
+    fontFamily: "Inter_900Black",
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+  adModal: {
+    flex: 1,
+    backgroundColor: "#000A",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  adBox: {
+    backgroundColor: game.surface,
+    borderRadius: 18,
+    padding: 18,
+    width: "100%",
+    maxWidth: 360,
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: game.border,
+  },
+  adTitle: { color: game.gold, fontFamily: "Inter_900Black", fontSize: 12, letterSpacing: 2 },
+  adVideo: {
+    width: "100%",
+    height: 180,
+    backgroundColor: game.bgDeep,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  adVideoText: { color: game.text, fontFamily: "Inter_900Black", fontSize: 18 },
+  adVideoSubtext: { color: game.textDim, fontFamily: "Inter_500Medium", fontSize: 10 },
+  adProgressBar: {
+    width: "100%",
+    height: 6,
+    backgroundColor: game.bgDeep,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  adProgressFill: { height: 6, backgroundColor: game.gold },
+  adWait: { color: game.textDim, fontFamily: "Inter_500Medium", fontSize: 11 },
+  adClose: { paddingHorizontal: 18, paddingVertical: 8 },
+  adCloseText: { color: game.textDim, fontFamily: "Inter_700Bold", fontSize: 12 },
 });

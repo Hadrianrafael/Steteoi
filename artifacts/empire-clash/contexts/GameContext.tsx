@@ -31,6 +31,8 @@ export type Profile = {
   ownedSkins: string[];
   selectedSkin: string;
   planeTier: PlaneTier;
+  planeShards: Record<string, number>;
+  planeLevels: Record<string, number>;
   upgGrowth: number;
   upgAttack: number;
   upgStart: number;
@@ -61,6 +63,8 @@ const DEFAULT_PROFILE: Profile = {
   ownedSkins: ["classic"],
   selectedSkin: "classic",
   planeTier: 1,
+  planeShards: { "1": 10, "2": 0, "3": 0, "4": 0, "5": 0 },
+  planeLevels: { "1": 1, "2": 0, "3": 0, "4": 0, "5": 0 },
   upgGrowth: 0,
   upgAttack: 0,
   upgStart: 0,
@@ -77,7 +81,7 @@ const DEFAULT_PROFILE: Profile = {
   seasonPoints: 0,
 };
 
-const STORAGE_KEY = "@empire_clash_profile_v4";
+const STORAGE_KEY = "@empire_clash_profile_v5";
 
 type Ctx = {
   profile: Profile;
@@ -95,11 +99,18 @@ type Ctx = {
   buySkin: (id: string, cost: number, currency: "coins" | "gems") => boolean;
   selectSkin: (id: string) => void;
   upgradePlane: () => boolean;
+  addPlaneShards: (tier: PlaneTier, n: number) => void;
+  unlockPlane: (tier: PlaneTier, freeFromAd?: boolean) => boolean;
+  levelUpPlane: (tier: PlaneTier, freeFromAd?: boolean) => boolean;
+  equipPlane: (tier: PlaneTier) => boolean;
   upgrade: (key: "upgGrowth" | "upgAttack" | "upgStart" | "upgPlaneSpeed") => boolean;
+  freeUpgrade: (key: "upgGrowth" | "upgAttack" | "upgStart" | "upgPlaneSpeed") => boolean;
   buySkill: (key: SkillKey, cost: number) => boolean;
   useSkill: (key: SkillKey) => boolean;
   activateVip: () => void;
   claimDailyLogin: () => { reward: number; type: "coins" | "gems" } | null;
+  enemyCountForLevel: () => number;
+  multiplayerUnlocked: boolean;
   reset: () => void;
 };
 
@@ -253,7 +264,62 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const next = (profile.planeTier + 1) as PlaneTier;
     const cost = PLANE_COSTS[next];
     if (profile.coins < cost) return false;
-    setProfile((p) => ({ ...p, coins: p.coins - cost, planeTier: next }));
+    setProfile((p) => ({
+      ...p,
+      coins: p.coins - cost,
+      planeTier: next,
+      planeLevels: { ...p.planeLevels, [String(next)]: Math.max(p.planeLevels[String(next)] ?? 0, 1) },
+    }));
+    return true;
+  };
+
+  const addPlaneShards = (tier: PlaneTier, n: number) =>
+    setProfile((p) => ({
+      ...p,
+      planeShards: {
+        ...p.planeShards,
+        [String(tier)]: (p.planeShards[String(tier)] ?? 0) + n,
+      },
+    }));
+
+  const unlockPlane = (tier: PlaneTier, freeFromAd = false) => {
+    const k = String(tier);
+    const shards = profile.planeShards[k] ?? 0;
+    const lvl = profile.planeLevels[k] ?? 0;
+    if (lvl > 0) return false; // already unlocked
+    if (shards < 10) return false;
+    const cost = PLANE_COSTS[tier];
+    if (!freeFromAd && profile.coins < cost) return false;
+    setProfile((p) => ({
+      ...p,
+      coins: freeFromAd ? p.coins : p.coins - cost,
+      planeShards: { ...p.planeShards, [k]: shards - 10 },
+      planeLevels: { ...p.planeLevels, [k]: 1 },
+    }));
+    return true;
+  };
+
+  const levelUpPlane = (tier: PlaneTier, freeFromAd = false) => {
+    const k = String(tier);
+    const shards = profile.planeShards[k] ?? 0;
+    const lvl = profile.planeLevels[k] ?? 0;
+    if (lvl < 1 || lvl >= 10) return false;
+    if (shards < 5) return false;
+    const cost = Math.round(PLANE_COSTS[tier] * 0.3 * lvl);
+    if (!freeFromAd && profile.coins < cost) return false;
+    setProfile((p) => ({
+      ...p,
+      coins: freeFromAd ? p.coins : p.coins - cost,
+      planeShards: { ...p.planeShards, [k]: shards - 5 },
+      planeLevels: { ...p.planeLevels, [k]: lvl + 1 },
+    }));
+    return true;
+  };
+
+  const equipPlane = (tier: PlaneTier) => {
+    const lvl = profile.planeLevels[String(tier)] ?? 0;
+    if (lvl < 1) return false;
+    setProfile((p) => ({ ...p, planeTier: tier }));
     return true;
   };
 
@@ -265,6 +331,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const cost = UPGRADE_COSTS[key](lvl);
     if (profile.coins < cost) return false;
     setProfile((p) => ({ ...p, coins: p.coins - cost, [key]: lvl + 1 }));
+    return true;
+  };
+
+  const freeUpgrade = (
+    key: "upgGrowth" | "upgAttack" | "upgStart" | "upgPlaneSpeed",
+  ) => {
+    const lvl = profile[key];
+    if (lvl >= 5) return false;
+    setProfile((p) => ({ ...p, [key]: lvl + 1 }));
     return true;
   };
 
@@ -325,11 +400,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         buySkin,
         selectSkin,
         upgradePlane,
+        addPlaneShards,
+        unlockPlane,
+        levelUpPlane,
+        equipPlane,
         upgrade,
+        freeUpgrade,
         buySkill,
         useSkill,
         activateVip,
         claimDailyLogin,
+        enemyCountForLevel: () => {
+          if (profile.level <= 5) return 3;
+          if (profile.level <= 10) return 4;
+          return 5;
+        },
+        multiplayerUnlocked: profile.level >= 10,
         reset,
       }}
     >

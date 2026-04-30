@@ -65,7 +65,7 @@ const MAX = 5;
 const CATEGORIES = ["GUARNIÇÃO", "PRODUÇÃO", "CAPACIDADE"] as const;
 
 export default function UpgradesScreen() {
-  const { profile, upgrade, addCoins } = useGame();
+  const { profile, upgrade, freeUpgrade } = useGame();
   const [adShowing, setAdShowing] = useState<(typeof UPGRADES)[number]["key"] | null>(null);
   const [adProgress, setAdProgress] = useState(0);
   const adAnim = useRef(new Animated.Value(0)).current;
@@ -82,14 +82,8 @@ export default function UpgradesScreen() {
     }).start(({ finished }) => {
       if (!finished || !adShowing) return;
       const key = adShowing;
-      const lvl = profile[key];
-      if (lvl < MAX) {
-        const cost = UPGRADE_COSTS[key](lvl);
-        addCoins(cost);
-        setTimeout(() => {
-          upgrade(key);
-          Alert.alert("Upgrade grátis!", "Recompensa do anúncio aplicada.");
-        }, 50);
+      if (freeUpgrade(key)) {
+        Alert.alert("Upgrade grátis!", "Recompensa do anúncio aplicada.");
       }
       setAdShowing(null);
     });
@@ -218,7 +212,7 @@ export default function UpgradesScreen() {
                           ]}
                         >
                           <FontAwesome5 name="play" size={10} color={game.text} />
-                          <Text style={styles.adBtnText}>GRÁTIS</Text>
+                          <Text style={styles.adBtnText}>VÍDEO</Text>
                         </Pressable>
                       )}
                     </View>

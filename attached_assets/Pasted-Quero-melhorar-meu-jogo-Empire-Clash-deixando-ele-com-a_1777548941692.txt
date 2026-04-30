@@ -1,0 +1,191 @@
+Quero melhorar meu jogo Empire Clash deixando ele com aparência profissional, sistema viciante e pronto para publicação na Play Store.
+
+---
+
+# 🎨 1. INTERFACE (UI LIMPA E MODERNA)
+
+* Interface minimalista e organizada
+* Fundo com mapa escuro e estilizado
+* Pouca poluição visual
+* Ícones grandes e bonitos
+
+## Menu inicial deve conter:
+
+* Nome do jogador + nível + barra de XP
+* Moedas, diamantes e energia no topo
+* Botão grande central: "JOGAR"
+* Botão LOJA
+* Botão MELHORIAS
+* Botão ARSENAL (aviões)
+* Botão MULTIPLAYER (visível quando desbloqueado)
+
+---
+
+# ✈️ 2. SISTEMA DE AVIÕES (PERSONAGENS)
+
+* Cada avião é desbloqueado com figurinhas (cartas)
+
+## Regras:
+
+* Precisa de 10 figurinhas para desbloquear
+* Para melhorar o avião precisa de 5 figurinhas
+* Cada upgrade aumenta o nível
+
+## Interface:
+
+* Mostrar progresso (ex: 5/10)
+* Aviões bloqueados com cadeado
+* Texto: "AINDA NÃO DESBLOQUEADO"
+
+---
+
+# 🔼 3. SISTEMA DE UPGRADE DOS AVIÕES
+
+## Regra principal:
+
+* Se tiver figurinhas suficientes:
+
+  * Se tiver moedas → botão: "UPGRADE (X moedas)"
+  * Se NÃO tiver moedas → botão: "ASSISTIR VÍDEO PARA MELHORAR"
+
+## Comportamento:
+
+* Assistir vídeo → faz upgrade mesmo sem moedas
+* Upgrade consome figurinhas
+
+---
+
+# 🪙 4. MELHORIAS DO JOGO
+
+* Melhorias compradas com moedas
+
+## Tipos:
+
+* Produção
+* Capacidade
+* Velocidade
+
+## Regra:
+
+* Se tiver moedas → upgrade normal
+* Se NÃO tiver moedas → botão:
+  "ASSISTIR VÍDEO PARA MELHORAR"
+
+---
+
+# 💎 5. HABILIDADES
+
+* Compradas com diamantes
+* Devem ser mais caras
+
+## Exemplos:
+
+* Bomba tática → 20 diamantes
+* Escudo → 30 diamantes
+* Ataque aéreo → 50 diamantes
+
+---
+
+# ⚡ 6. ENERGIA
+
+* Máximo: 30
+* Cada partida consome energia
+
+## Se acabar:
+
+* Mostrar botão:
+  "ASSISTIR VÍDEO PARA RECUPERAR ENERGIA"
+
+---
+
+# 🎮 7. SISTEMA DE MODOS DE JOGO (AUTOMÁTICO)
+
+O jogador NÃO escolhe o modo.
+
+## Níveis 1 até 5:
+
+* 1 vs 3 (contra bots)
+
+## Níveis 6 até 10:
+
+* 1 vs 4 (contra bots)
+
+## Nível 10 ou mais:
+
+* 1 vs 5
+
+---
+
+# 🌐 8. MULTIPLAYER
+
+* Desbloqueado no nível 10
+
+## Multiplayer:
+
+* 5 jogadores reais
+* Botão aparece no menu inicial quando desbloquear
+
+---
+
+# 🎥 9. MONETIZAÇÃO (AdMob Rewarded)
+
+Implementar anúncios premiados.
+
+## Usos:
+
+* Melhorar aviões sem moedas
+* Melhorar melhorias sem moedas
+* Recuperar energia
+* Ganhar moedas
+
+---
+
+# 🗺️ 10. MAPA
+
+* Mostrar apenas:
+
+  * Seu território
+  * Inimigos
+
+* Evitar excesso de elementos
+
+---
+
+# 🧠 11. PROGRESSÃO
+
+* Jogador sobe de nível com XP
+
+* Recompensas:
+
+  * Moedas
+  * Figurinhas
+  * Diamantes
+
+* Dificuldade aumenta conforme nível
+
+---
+
+# 🎯 12. EXPERIÊNCIA DO JOGADOR
+
+* Animações suaves
+* Feedback ao clicar
+* Transições fluidas
+* Interface responsiva
+
+---
+
+# 🎁 13. ECONOMIA
+
+* Moedas começam em 0
+* Diamantes começam em 0
+* Progressão equilibrada
+
+---
+
+# FINAL
+
+Quero que o jogo tenha aparência profissional,
+com sistema viciante, progressão clara, monetização funcional
+e pronto para publicação na Play Store.
+
+Use como referência jogos mobile como Clash Royale e State.io.

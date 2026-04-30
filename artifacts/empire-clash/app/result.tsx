@@ -14,9 +14,13 @@ export default function ResultScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ winner?: string }>();
-  const { addCoins, addGems, addXp, addTrophies, addWin } = useGame();
+  const { addCoins, addGems, addXp, addTrophies, addWin, addPlaneShards } = useGame();
 
   const won = params.winner === "player";
+  const shardReward = useRef<{ tier: 2 | 3 | 4 | 5; n: number }>({
+    tier: (Math.floor(Math.random() * 4) + 2) as 2 | 3 | 4 | 5,
+    n: won ? Math.floor(Math.random() * 2) + 2 : 1,
+  }).current;
   const winnerName = (PLAYER_NAMES as Record<string, string>)[params.winner ?? ""] ??
     "—";
 
@@ -38,6 +42,7 @@ export default function ResultScreen() {
     addGems(gems);
     addXp(xp);
     addTrophies(trophies);
+    addPlaneShards(shardReward.tier, shardReward.n);
     if (won) addWin();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -104,6 +109,12 @@ export default function ResultScreen() {
           color={trophies > 0 ? game.success : game.danger}
           label="Troféus"
           value={`${trophies > 0 ? "+" : ""}${trophies}`}
+        />
+        <Reward
+          icon="puzzle-piece"
+          color={game.gem}
+          label={`Figurinha NV${shardReward.tier}`}
+          value={`+${shardReward.n}`}
         />
       </View>
 

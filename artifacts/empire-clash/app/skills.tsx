@@ -20,15 +20,7 @@ const SKILLS: {
     desc: "Reduz tropas inimigas pela metade no mapa inteiro",
     icon: "bomb",
     color: game.danger,
-    cost: 10,
-  },
-  {
-    key: "skillRally",
-    name: "Reforço Imediato",
-    desc: "+5 tropas em todos os seus territórios",
-    icon: "users",
-    color: game.success,
-    cost: 6,
+    cost: 20,
   },
   {
     key: "skillShield",
@@ -36,15 +28,23 @@ const SKILLS: {
     desc: "Defesa +15% por 8 segundos",
     icon: "shield-alt",
     color: game.gem,
-    cost: 8,
+    cost: 30,
   },
   {
     key: "skillFury",
-    name: "Fúria de Guerra",
+    name: "Ataque Aéreo",
     desc: "+30% de chance de vitória em ataques por 10 segundos",
-    icon: "fire",
+    icon: "fighter-jet",
     color: "#FF6A1A",
-    cost: 12,
+    cost: 50,
+  },
+  {
+    key: "skillRally",
+    name: "Reforço Imediato",
+    desc: "+5 tropas em todos os seus territórios",
+    icon: "users",
+    color: game.success,
+    cost: 25,
   },
   {
     key: "skillFreeze",
@@ -52,7 +52,7 @@ const SKILLS: {
     desc: "IAs inimigas paralisam por 5 segundos",
     icon: "snowflake",
     color: "#7FD8FF",
-    cost: 14,
+    cost: 40,
   },
   {
     key: "skillSpy",
@@ -60,7 +60,7 @@ const SKILLS: {
     desc: "Revela movimentos do inimigo por 10 segundos",
     icon: "user-secret",
     color: game.purple,
-    cost: 9,
+    cost: 35,
   },
 ];
 
