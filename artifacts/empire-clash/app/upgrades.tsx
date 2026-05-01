@@ -1,11 +1,9 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
-  Animated,
-  Easing,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +13,7 @@ import {
 
 import { game } from "@/constants/colors";
 import { UPGRADE_COSTS, useGame } from "@/contexts/GameContext";
+import { showRewardedAd } from "@/lib/admob";
 
 
 
@@ -66,33 +65,19 @@ const CATEGORIES = ["GUARNIÇÃO", "PRODUÇÃO", "CAPACIDADE"] as const;
 
 export default function UpgradesScreen() {
   const { profile, upgrade, freeUpgrade } = useGame();
-  const [adShowing, setAdShowing] = useState<(typeof UPGRADES)[number]["key"] | null>(null);
-  const [adProgress, setAdProgress] = useState(0);
-  const adAnim = useRef(new Animated.Value(0)).current;
+  const [adLoading, setAdLoading] = useState<(typeof UPGRADES)[number]["key"] | null>(null);
 
-  useEffect(() => {
-    if (!adShowing) return;
-    setAdProgress(0);
-    adAnim.setValue(0);
-    Animated.timing(adAnim, {
-      toValue: 1,
-      duration: 4000,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (!finished || !adShowing) return;
-      const key = adShowing;
-      if (freeUpgrade(key)) {
-        Alert.alert("Upgrade grátis!", "Recompensa do anúncio aplicada.");
-      }
-      setAdShowing(null);
+  const watchAdForUpgrade = (key: (typeof UPGRADES)[number]["key"]) => {
+    if (adLoading) return;
+    setAdLoading(key);
+    showRewardedAd({
+      onEarned: () => {
+        if (freeUpgrade(key)) Alert.alert("Upgrade grátis!", "Recompensa do anúncio aplicada.");
+        setAdLoading(null);
+      },
+      onDismissed: () => setAdLoading(null),
     });
-    const id = setInterval(() => {
-      const v = (adAnim as unknown as { _value: number })._value ?? 0;
-      setAdProgress(v);
-    }, 100);
-    return () => clearInterval(id);
-  }, [adShowing]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
 
   const handle = (key: (typeof UPGRADES)[number]["key"]) => {
     const lvl = profile[key];
@@ -101,7 +86,7 @@ export default function UpgradesScreen() {
       return;
     }
     if (!upgrade(key)) {
-      Alert.alert("Moedas insuficientes", "Assista um anúncio para upgrade grátis.");
+      Alert.alert("Sem moedas", "Assista um vídeo para upgrade grátis.");
     }
   };
 
@@ -205,13 +190,18 @@ export default function UpgradesScreen() {
                       </Pressable>
                       {!maxed && (
                         <Pressable
-                          onPress={() => setAdShowing(u.key)}
+                          onPress={() => watchAdForUpgrade(u.key)}
+                          disabled={!!adLoading}
                           style={({ pressed }) => [
                             styles.adBtn,
-                            { opacity: pressed ? 0.85 : 1 },
+                            { opacity: adLoading ? 0.7 : pressed ? 0.85 : 1 },
                           ]}
                         >
-                          <FontAwesome5 name="play" size={10} color={game.text} />
+                          {adLoading === u.key ? (
+                            <ActivityIndicator size="small" color={game.text} />
+                          ) : (
+                            <FontAwesome5 name="play" size={10} color={game.text} />
+                          )}
                           <Text style={styles.adBtnText}>VÍDEO</Text>
                         </Pressable>
                       )}
@@ -224,33 +214,6 @@ export default function UpgradesScreen() {
         );
       })}
 
-      <Modal visible={!!adShowing} transparent animationType="fade">
-        <View style={styles.adModal}>
-          <View style={styles.adBox}>
-            <Text style={styles.adTitle}>ANÚNCIO PATROCINADO</Text>
-            <View style={styles.adVideo}>
-              <FontAwesome5 name="ad" size={64} color={game.gold} />
-              <Text style={styles.adVideoText}>Empire Clash</Text>
-              <Text style={styles.adVideoSubtext}>
-                Upgrade grátis após o vídeo
-              </Text>
-            </View>
-            <View style={styles.adProgressBar}>
-              <View
-                style={[styles.adProgressFill, { width: `${adProgress * 100}%` }]}
-              />
-            </View>
-            <Text style={styles.adWait}>
-              {adShowing
-                ? `Aguarde ${Math.max(0, Math.ceil(4 - adProgress * 4))}s`
-                : ""}
-            </Text>
-            <Pressable onPress={() => setAdShowing(null)} style={styles.adClose}>
-              <Text style={styles.adCloseText}>Cancelar</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
@@ -398,73 +361,5 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_900Black",
     fontSize: 12,
     letterSpacing: 1,
-  },
-  adModal: {
-    flex: 1,
-    backgroundColor: "#000A",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  adBox: {
-    backgroundColor: game.surface,
-    borderRadius: 18,
-    padding: 18,
-    width: "100%",
-    maxWidth: 360,
-    alignItems: "center",
-    gap: 12,
-    borderWidth: 1,
-    borderColor: game.border,
-  },
-  adTitle: {
-    color: game.gold,
-    fontFamily: "Inter_900Black",
-    fontSize: 12,
-    letterSpacing: 2,
-  },
-  adVideo: {
-    width: "100%",
-    height: 180,
-    backgroundColor: game.bgDeep,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  adVideoText: {
-    color: game.text,
-    fontFamily: "Inter_900Black",
-    fontSize: 18,
-  },
-  adVideoSubtext: {
-    color: game.textDim,
-    fontFamily: "Inter_500Medium",
-    fontSize: 10,
-  },
-  adProgressBar: {
-    width: "100%",
-    height: 6,
-    backgroundColor: game.bgDeep,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  adProgressFill: {
-    height: 6,
-    backgroundColor: game.gold,
-  },
-  adWait: {
-    color: game.textDim,
-    fontFamily: "Inter_500Medium",
-    fontSize: 11,
-  },
-  adClose: {
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-  },
-  adCloseText: {
-    color: game.textDim,
-    fontFamily: "Inter_700Bold",
-    fontSize: 12,
   },
 });

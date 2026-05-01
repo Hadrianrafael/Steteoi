@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { game } from "@/constants/colors";
 import { useGame } from "@/contexts/GameContext";
+import { showInterstitialAd } from "@/lib/admob";
 
 export default function Lobby() {
   const router = useRouter();
@@ -30,7 +31,9 @@ export default function Lobby() {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     }
-    router.push(`/game?players=${totalPlayers}&diff=normal` as never);
+    showInterstitialAd({
+      onClosed: () => router.push(`/game?players=${totalPlayers}&diff=normal` as never),
+    });
   };
 
   return (

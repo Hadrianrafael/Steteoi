@@ -4,22 +4,24 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Easing,
   Image,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TopBar } from "@/components/TopBar";
 import { game } from "@/constants/colors";
 import { useGame, xpProgress } from "@/contexts/GameContext";
+import { showRewardedAd } from "@/lib/admob";
 
 export default function Home() {
   const router = useRouter();
@@ -29,9 +31,7 @@ export default function Home() {
     reward: number;
     type: "coins" | "gems";
   } | null>(null);
-  const [showAd, setShowAd] = useState(false);
-  const [adProgress, setAdProgress] = useState(0);
-  const adAnim = useRef(new Animated.Value(0)).current;
+  const [energyAdLoading, setEnergyAdLoading] = useState(false);
   const pulse = useRef(new Animated.Value(1)).current;
   const glow = useRef(new Animated.Value(0)).current;
 
@@ -73,28 +73,17 @@ export default function Home() {
     ).start();
   }, [pulse, glow]);
 
-  useEffect(() => {
-    if (!showAd) return;
-    setAdProgress(0);
-    adAnim.setValue(0);
-    Animated.timing(adAnim, {
-      toValue: 1,
-      duration: 4000,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (finished) {
+  const handleEnergyAd = () => {
+    if (energyAdLoading) return;
+    setEnergyAdLoading(true);
+    showRewardedAd({
+      onEarned: () => {
         refillEnergy();
-        Alert.alert("Energia recarregada!", "Boa sorte na batalha.");
-        setShowAd(false);
-      }
+        setEnergyAdLoading(false);
+      },
+      onDismissed: () => setEnergyAdLoading(false),
     });
-    const id = setInterval(() => {
-      const v = (adAnim as unknown as { _value: number })._value ?? 0;
-      setAdProgress(v);
-    }, 100);
-    return () => clearInterval(id);
-  }, [showAd]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
 
   const xpFrac = xpProgress(profile);
 
@@ -271,15 +260,20 @@ export default function Home() {
 
         {profile.energy < 1 && (
           <Pressable
-            onPress={() => setShowAd(true)}
+            onPress={handleEnergyAd}
+            disabled={energyAdLoading}
             style={({ pressed }) => [
               styles.energyAdBtn,
-              { opacity: pressed ? 0.85 : 1 },
+              { opacity: energyAdLoading ? 0.7 : pressed ? 0.85 : 1 },
             ]}
           >
-            <FontAwesome5 name="play" size={12} color={game.text} />
+            {energyAdLoading ? (
+              <ActivityIndicator color={game.text} size="small" />
+            ) : (
+              <FontAwesome5 name="play" size={12} color={game.text} />
+            )}
             <Text style={styles.energyAdText}>
-              ASSISTIR VÍDEO PARA RECUPERAR ENERGIA
+              {energyAdLoading ? "Carregando anúncio…" : "ASSISTIR PARA RECUPERAR ENERGIA"}
             </Text>
           </Pressable>
         )}
@@ -310,27 +304,6 @@ export default function Home() {
 
       <View style={{ paddingBottom: insets.bottom + 8 }} />
 
-      <Modal visible={showAd} transparent animationType="fade">
-        <View style={styles.adModal}>
-          <View style={styles.adBox}>
-            <Text style={styles.adTitle}>ANÚNCIO PATROCINADO</Text>
-            <View style={styles.adVideo}>
-              <FontAwesome5 name="bolt" size={64} color={game.energy} />
-              <Text style={styles.adVideoText}>+{profile.maxEnergy} ENERGIA</Text>
-              <Text style={styles.adVideoSubtext}>Recarga total após o vídeo</Text>
-            </View>
-            <View style={styles.adProgressBar}>
-              <View style={[styles.adProgressFill, { width: `${adProgress * 100}%` }]} />
-            </View>
-            <Text style={styles.adWait}>
-              Aguarde {Math.max(0, Math.ceil(4 - adProgress * 4))}s
-            </Text>
-            <Pressable onPress={() => setShowAd(false)} style={styles.adClose}>
-              <Text style={styles.adCloseText}>Cancelar</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -533,45 +506,4 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1,
   },
-  adModal: {
-    flex: 1,
-    backgroundColor: "#000A",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  adBox: {
-    backgroundColor: game.surface,
-    borderRadius: 18,
-    padding: 18,
-    width: "100%",
-    maxWidth: 360,
-    alignItems: "center",
-    gap: 12,
-    borderWidth: 1,
-    borderColor: game.border,
-  },
-  adTitle: { color: game.gold, fontFamily: "Inter_900Black", fontSize: 12, letterSpacing: 2 },
-  adVideo: {
-    width: "100%",
-    height: 180,
-    backgroundColor: game.bgDeep,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  adVideoText: { color: game.text, fontFamily: "Inter_900Black", fontSize: 18 },
-  adVideoSubtext: { color: game.textDim, fontFamily: "Inter_500Medium", fontSize: 10 },
-  adProgressBar: {
-    width: "100%",
-    height: 6,
-    backgroundColor: game.bgDeep,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  adProgressFill: { height: 6, backgroundColor: game.gold },
-  adWait: { color: game.textDim, fontFamily: "Inter_500Medium", fontSize: 11 },
-  adClose: { paddingHorizontal: 18, paddingVertical: 8 },
-  adCloseText: { color: game.textDim, fontFamily: "Inter_700Bold", fontSize: 12 },
 });
