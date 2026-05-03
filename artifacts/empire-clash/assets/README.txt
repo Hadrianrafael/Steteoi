@@ -1,0 +1,1 @@
+Placeholders for Expo assets. Do not remove icon.png, splash.png, or adaptive-icon.png.
