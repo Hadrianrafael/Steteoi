@@ -10,32 +10,33 @@
     "newArchEnabled": true,
     "primaryColor": "#FFB800",
     "description": "Domine o mundo em batalhas de estratégia em tempo real. Conquiste territórios, monte sua frota aérea e vença seus inimigos no maior jogo de conquista mobile do Brasil.",
+
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0f172a"
     },
-    "assetBundlePatterns": [
-      "assets/**/*"
-    ],
+
+    "assetBundlePatterns": ["assets/**/*"],
+
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.hadrian.empireclash",
       "buildNumber": "1",
       "infoPlist": {
-        "NSUserTrackingUsageDescription": "Este identificador será usado para mostrar anúncios mais relevantes para você.",
-        "SKAdNetworkItems": [
-          { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" }
-        ]
+        "NSUserTrackingUsageDescription": "Este identificador será usado para mostrar anúncios mais relevantes para você."
       }
     },
+
     "android": {
       "package": "com.hadrian.empireclash",
       "versionCode": 1,
+
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f172a"
       },
+
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -43,25 +44,19 @@
         "com.google.android.gms.permission.AD_ID",
         "com.android.vending.BILLING"
       ],
+
       "blockedPermissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "RECORD_AUDIO",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
         "CAMERA"
-      ],
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "category": ["BROWSABLE", "DEFAULT"],
-          "data": [{ "scheme": "empireclash" }]
-        }
       ]
     },
+
     "web": {
       "favicon": "./assets/icon.png"
     },
+
     "plugins": [
       [
         "expo-router",
@@ -84,29 +79,25 @@
         }
       ]
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
+
     "extra": {
       "admob": {
-        "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
-        "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
-        "rewardedAndroid": "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX",
-        "interstitialAndroid": "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX",
-        "useTestAds": true
+        "androidAppId": "ca-app-pub-1752902298077786~3887343530",
+        "rewardedAndroid": "ca-app-pub-1752902298077786/8272251612",
+        "interstitialAndroid": "ca-app-pub-1752902298077786/8252070315",
+        "useTestAds": false
       },
-      "unityAds": {
-        "androidGameId": "1234567",
-        "iosGameId": "1234568",
-        "rewardedAndroidPlacement": "Rewarded_Android",
-        "interstitialAndroidPlacement": "Interstitial_Android",
-        "useTestAds": true
-      },
+
       "eas": {
         "projectId": "empire-clash"
       }
     },
+
     "runtimeVersion": {
       "policy": "appVersion"
     }
