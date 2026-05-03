@@ -96,6 +96,13 @@
         "interstitialAndroid": "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX",
         "useTestAds": true
       },
+      "unityAds": {
+        "androidGameId": "1234567",
+        "iosGameId": "1234568",
+        "rewardedAndroidPlacement": "Rewarded_Android",
+        "interstitialAndroidPlacement": "Interstitial_Android",
+        "useTestAds": true
+      },
       "eas": {
         "projectId": "empire-clash"
       }
