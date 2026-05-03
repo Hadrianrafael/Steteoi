@@ -1,0 +1,231 @@
+Quero transformar meu jogo Empire Clash em um jogo mobile profissional estilo Play Store, com sistema completo de progressão, loja, arsenal, mapas e monetização.
+
+---
+
+# 🎮 VISUAL E INTERFACE
+
+* Interface moderna, limpa e profissional
+* Tela inicial bonita com:
+
+  * Botão “JOGAR”
+  * Multiplayer visível
+  * Perfil do jogador (nível, XP)
+  * Moedas, diamantes e energia no topo
+* Adicionar missões:
+
+  * Diárias
+  * Semanais
+  * Mensais
+* Mostrar recompensas na tela inicial
+
+---
+
+# 🗺️ MAPA
+
+* Mapa deve ocupar 100% da tela
+* Visual realista:
+
+  * Terras verdes com variação de cor
+  * Água azul com gradiente
+* Ilhas e continentes naturais
+* Sem espaços vazios
+* Visual estilo jogo profissional
+
+---
+
+# 🛒 LOJA
+
+Criar loja completa com:
+
+* 💰 Moedas (compradas com diamantes)
+* 💎 Diamantes (comprados com dinheiro real)
+* 🎁 Packs (iniciante e premium)
+* ⚡ Boosters
+
+Regras:
+
+* Botão "GRÁTIS" com anúncio premiado
+* Layout com imagens bonitas
+* Sistema de economia balanceado
+
+---
+
+# 🎯 MISSÕES
+
+Adicionar:
+
+## Tipos:
+
+* Diárias
+* Semanais
+* Mensais
+
+## Recompensas:
+
+* Moedas
+* Diamantes
+* Cartas
+
+---
+
+# 🎴 SISTEMA DE CARTAS
+
+Sistema de evolução com cartas:
+
+## Tipos:
+
+🔵 Azul (mais raro)
+
+* Rara
+* Épica
+* Lendária
+
+🔴 Vermelha
+
+* Comum
+* Rara
+* Épica
+
+🟡 Amarela
+
+* Comum
+* Incomum
+* Rara
+
+## Como ganhar:
+
+* Após partidas
+* Missões
+* Recompensa offline
+
+Cartas azuis devem ser mais difíceis de obter
+
+---
+
+# ✈️ ARSENAL
+
+Criar tela Arsenal com:
+
+* Aviões
+* Personagens
+* Habilidades
+
+## Aviões:
+
+* Mostrar imagens reais (F15 e outros)
+* Desbloqueio por cartas
+
+## Upgrade:
+
+* Precisa cartas + moedas
+
+## Regra especial:
+
+Se tiver cartas mas NÃO tiver moedas:
+
+👉 Mostrar botão:
+"Assistir anúncio para melhorar"
+
+Se tiver moedas:
+
+👉 Mostrar botão normal de upgrade
+
+---
+
+# 💥 HABILIDADES
+
+* Custam diamantes
+* Mais caras que melhorias normais
+* Exemplo:
+
+  * Bomba tática: 20 diamantes
+
+---
+
+# 🎮 MODOS DE JOGO
+
+* Níveis 1–5:
+
+  * 1 vs 3
+
+* Níveis 5–10:
+
+  * 1 vs 4
+
+* Nível 10+:
+
+  * 1 vs 5 (multiplayer liberado)
+
+Jogadores iniciais enfrentam bots
+
+---
+
+# 🎁 RECOMPENSAS
+
+## Pós-partida:
+
+* Moedas
+* Cartas
+
+Botão:
+👉 "Assistir anúncio para dobrar recompensa"
+
+---
+
+# ⏱️ SISTEMA OFFLINE
+
+Quando o jogador voltar:
+
+* Calcular tempo offline
+* Dar:
+
+  * Moedas
+  * Cartas
+
+Mostrar popup com:
+
+* Tempo offline
+* Recompensas
+
+Botão:
+👉 "Assistir anúncio para dobrar tudo"
+
+---
+
+# ⚡ ENERGIA
+
+* Aumentar energia máxima para 30
+* Quando acabar:
+
+👉 Mostrar:
+"Assistir anúncio para recuperar energia"
+
+---
+
+# 💾 SALVAMENTO
+
+* Opção de login com email
+* Salvar progresso do jogador
+
+---
+
+# 📺 ANÚNCIOS (ADMOB)
+
+Implementar:
+
+* Anúncio premiado:
+
+  * Dobrar recompensas
+  * Upgrade sem moedas
+  * Recuperar energia
+
+---
+
+# 🎯 OBJETIVO FINAL
+
+Quero um jogo com aparência e funcionamento de um jogo profissional da Play Store, com:
+
+* Progressão
+* Monetização
+* Engajamento
+* Interface moderna
