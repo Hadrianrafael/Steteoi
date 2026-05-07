@@ -16,14 +16,16 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { game } from "@/constants/colors";
-import { GameProvider } from "@/contexts/GameContext";
+import { GameProvider, useGame } from "@/contexts/GameContext";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-function RootLayoutNav() {
+function StackNav() {
   return (
     <Stack
       screenOptions={{
@@ -67,6 +69,24 @@ function RootLayoutNav() {
   );
 }
 
+function AppShell() {
+  const { ready, isFirstLaunch, setName } = useGame();
+
+  if (!ready) return <LoadingScreen />;
+
+  if (isFirstLaunch) {
+    return (
+      <WelcomeScreen
+        onComplete={(name) => {
+          setName(name);
+        }}
+      />
+    );
+  }
+
+  return <StackNav />;
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -92,7 +112,7 @@ export default function RootLayout() {
             <GestureHandlerRootView style={{ flex: 1, backgroundColor: game.bg }}>
               <KeyboardProvider>
                 <StatusBar style="light" />
-                <RootLayoutNav />
+                <AppShell />
               </KeyboardProvider>
             </GestureHandlerRootView>
           </GameProvider>

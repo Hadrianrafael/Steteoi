@@ -1,5 +1,4 @@
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -10,7 +9,6 @@ import {
   Easing,
   Image,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -23,6 +21,7 @@ import { TopBar } from "@/components/TopBar";
 import { game } from "@/constants/colors";
 import { CARD_DEFS, OfflineReward, useGame, xpProgress } from "@/contexts/GameContext";
 import { showRewardedAd } from "@/lib/admob";
+import { haptic } from "@/services/haptics";
 
 export default function Home() {
   const router = useRouter();
@@ -106,9 +105,7 @@ export default function Home() {
 
   const handlePlay = () => {
     if (profile.energy < 1) return;
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-    }
+    haptic.play();
     router.push("/lobby");
   };
 

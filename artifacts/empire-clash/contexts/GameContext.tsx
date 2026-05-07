@@ -264,6 +264,9 @@ type Ctx = {
   pendingOfflineReward: OfflineReward | null;
   claimOfflineReward: (doubled: boolean) => void;
   touchActiveTs: () => void;
+  // Profile meta
+  setName: (name: string) => void;
+  isFirstLaunch: boolean;
 };
 
 const GameCtx = createContext<Ctx | null>(null);
@@ -653,6 +656,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
   };
 
+  const setName = (name: string) =>
+    setProfile((p) => ({
+      ...p,
+      name: name.trim() || "Comandante",
+      // Mark as no longer first launch (use sentinel date ≠ today so daily login still triggers)
+      lastLoginDate: lastLoginDate === null ? "first-launch-done" : p.lastLoginDate,
+    }));
+
+  const lastLoginDate = profile.lastLoginDate;
+
   return (
     <GameCtx.Provider
       value={{
@@ -695,6 +708,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         pendingOfflineReward,
         claimOfflineReward,
         touchActiveTs,
+        setName,
+        isFirstLaunch: profile.lastLoginDate === null,
       }}
     >
       {children}

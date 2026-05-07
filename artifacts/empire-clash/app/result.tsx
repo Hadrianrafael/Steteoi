@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { game } from "@/constants/colors";
 import { CARD_DEFS, rollCard, useGame } from "@/contexts/GameContext";
+import { showInterstitialAd } from "@/services/admob";
+import { haptic } from "@/services/haptics";
 import { showRewardedAd } from "@/lib/admob";
 import { PLAYER_NAMES } from "@/lib/gameEngine";
 
@@ -64,6 +66,12 @@ export default function ResultScreen() {
       friction: 7,
       useNativeDriver: true,
     }).start();
+    // Haptic feedback on result
+    if (won) {
+      haptic.victory();
+    } else {
+      haptic.error();
+    }
     addCoins(coins);
     addGems(gems);
     addXp(xp);
@@ -79,6 +87,16 @@ export default function ResultScreen() {
     }
     touchActiveTs();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const navigateWithInterstitial = (action: () => void) => {
+    haptic.click();
+    // Show interstitial ~every other match (50% chance)
+    if (Math.random() < 0.5) {
+      showInterstitialAd({ onClosed: action });
+    } else {
+      action();
+    }
+  };
 
   const handleTriple = () => {
     if (tripled || loadingAd) return;
@@ -241,11 +259,11 @@ export default function ResultScreen() {
         <PrimaryButton
           label="JOGAR NOVAMENTE"
           variant="gold"
-          onPress={() => router.replace("/lobby")}
+          onPress={() => navigateWithInterstitial(() => router.replace("/lobby"))}
           icon={<FontAwesome5 name="redo" size={16} color={game.bgDeep} />}
         />
         <Pressable
-          onPress={() => router.replace("/")}
+          onPress={() => navigateWithInterstitial(() => router.replace("/"))}
           style={({ pressed }) => [
             styles.menuBtn,
             { opacity: pressed ? 0.7 : 1 },
