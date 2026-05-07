@@ -15,9 +15,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#0f172a"
     },
-    "assetBundlePatterns": [
-      "assets/**/*"
-    ],
+    "assetBundlePatterns": ["assets/**/*"],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.hadrian.empireclash",
@@ -65,9 +63,7 @@
     "plugins": [
       [
         "expo-router",
-        {
-          "origin": "https://replit.com/"
-        }
+        { "origin": "https://replit.com/" }
       ],
       "expo-font",
       "expo-web-browser",
@@ -79,7 +75,9 @@
             "targetSdkVersion": 35,
             "minSdkVersion": 24,
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableHermes": true,
+            "useFrameworks": "static"
           }
         }
       ]
@@ -90,18 +88,11 @@
     },
     "extra": {
       "admob": {
-        "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
-        "iosAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
-        "rewardedAndroid": "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX",
-        "interstitialAndroid": "ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX",
-        "useTestAds": true
-      },
-      "unityAds": {
-        "androidGameId": "1234567",
-        "iosGameId": "1234568",
-        "rewardedAndroidPlacement": "Rewarded_Android",
-        "interstitialAndroidPlacement": "Interstitial_Android",
-        "useTestAds": true
+        "androidAppId": "ca-app-pub-1752902298077786~3887343530",
+        "iosAppId": "ca-app-pub-1752902298077786~3887343530",
+        "rewardedAndroid": "ca-app-pub-1752902298077786/8272251612",
+        "interstitialAndroid": "ca-app-pub-1752902298077786/8252070315",
+        "useTestAds": false
       },
       "eas": {
         "projectId": "empire-clash"

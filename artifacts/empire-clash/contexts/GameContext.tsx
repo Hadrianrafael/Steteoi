@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -17,6 +18,108 @@ export type SkillKey =
   | "skillFury"
   | "skillFreeze";
 
+// ── Cards ─────────────────────────────────────────────────────────────────────
+export type CardColor = "blue" | "red" | "yellow";
+export type CardRarity =
+  | "legendary"
+  | "epic"
+  | "rare"
+  | "uncommon"
+  | "common";
+
+export type CardDef = {
+  id: string;
+  color: CardColor;
+  rarity: CardRarity;
+  name: string;
+  description: string;
+  bonus: string;
+};
+
+export const CARD_DEFS: CardDef[] = [
+  // Blue (rarest)
+  { id: "b_legendary", color: "blue", rarity: "legendary", name: "Armada Celestial", description: "Frota lendária de combate aéreo", bonus: "+25% velocidade de ataque" },
+  { id: "b_epic",      color: "blue", rarity: "epic",      name: "Escudo Tático",     description: "Defesa épica de território",       bonus: "+20% resistência" },
+  { id: "b_rare",      color: "blue", rarity: "rare",      name: "Radar Avançado",    description: "Detecção antecipada de ameaças",   bonus: "+15% visibilidade" },
+  // Red
+  { id: "r_epic",      color: "red",  rarity: "epic",      name: "Bombardeiro X",     description: "Ataque aéreo massivo",             bonus: "+18% dano de ataque" },
+  { id: "r_rare",      color: "red",  rarity: "rare",      name: "Artilharia Pesada", description: "Canhões de longo alcance",         bonus: "+12% alcance" },
+  { id: "r_common",    color: "red",  rarity: "common",    name: "Infantaria Elite",  description: "Tropas treinadas de combate",      bonus: "+8% produção de tropas" },
+  // Yellow
+  { id: "y_rare",      color: "yellow", rarity: "rare",    name: "Mina de Ouro",      description: "Produção acelerada de moedas",     bonus: "+10% moedas por vitória" },
+  { id: "y_uncommon",  color: "yellow", rarity: "uncommon", name: "Mercador",          description: "Desconto na loja",                 bonus: "-5% preços na loja" },
+  { id: "y_common",    color: "yellow", rarity: "common",  name: "Recruta",           description: "Soldado básico de apoio",           bonus: "+5% crescimento de tropas" },
+];
+
+// Drop weights: blue = rare, red = medium, yellow = common
+export const CARD_DROP_TABLE: { id: string; weight: number }[] = [
+  { id: "b_legendary", weight: 1 },
+  { id: "b_epic",      weight: 3 },
+  { id: "b_rare",      weight: 8 },
+  { id: "r_epic",      weight: 10 },
+  { id: "r_rare",      weight: 18 },
+  { id: "r_common",    weight: 30 },
+  { id: "y_rare",      weight: 20 },
+  { id: "y_uncommon",  weight: 40 },
+  { id: "y_common",    weight: 70 },
+];
+
+export function rollCard(): string {
+  const total = CARD_DROP_TABLE.reduce((s, c) => s + c.weight, 0);
+  let r = Math.random() * total;
+  for (const entry of CARD_DROP_TABLE) {
+    r -= entry.weight;
+    if (r <= 0) return entry.id;
+  }
+  return CARD_DROP_TABLE[CARD_DROP_TABLE.length - 1].id;
+}
+
+// ── Missions ──────────────────────────────────────────────────────────────────
+export type MissionType = "daily" | "weekly" | "monthly";
+
+export type MissionDef = {
+  id: string;
+  type: MissionType;
+  title: string;
+  description: string;
+  goal: number;
+  stat: keyof MissionStats;
+  reward: { coins?: number; gems?: number; cards?: number };
+};
+
+export type MissionStats = {
+  gamesPlayed: number;
+  gamesWon: number;
+  coinsEarned: number;
+  territoriesCaptured: number;
+};
+
+export const MISSION_DEFS: MissionDef[] = [
+  // Daily
+  { id: "d_play2",    type: "daily",   title: "Guerreiro Diário",    description: "Jogue 2 partidas",              goal: 2,  stat: "gamesPlayed",       reward: { coins: 200 } },
+  { id: "d_win1",     type: "daily",   title: "Primeira Vitória",    description: "Vença 1 partida",               goal: 1,  stat: "gamesWon",          reward: { coins: 300, cards: 1 } },
+  { id: "d_coins",    type: "daily",   title: "Comerciante",         description: "Ganhe 500 moedas em partidas",  goal: 500, stat: "coinsEarned",      reward: { gems: 3 } },
+  // Weekly
+  { id: "w_play10",   type: "weekly",  title: "Veterano",            description: "Jogue 10 partidas",             goal: 10, stat: "gamesPlayed",       reward: { coins: 1500, cards: 2 } },
+  { id: "w_win5",     type: "weekly",  title: "Conquistador",        description: "Vença 5 partidas",              goal: 5,  stat: "gamesWon",          reward: { gems: 15, cards: 3 } },
+  { id: "w_territory",type: "weekly",  title: "Expansionista",       description: "Capture 50 territórios",        goal: 50, stat: "territoriesCaptured", reward: { coins: 2000 } },
+  // Monthly
+  { id: "m_play50",   type: "monthly", title: "Lenda do Campo",      description: "Jogue 50 partidas",             goal: 50, stat: "gamesPlayed",       reward: { coins: 5000, gems: 20, cards: 5 } },
+  { id: "m_win20",    type: "monthly", title: "Grande Conquistador",  description: "Vença 20 partidas",            goal: 20, stat: "gamesWon",          reward: { gems: 50, cards: 8 } },
+];
+
+function getMissionPeriodKey(type: MissionType): string {
+  const now = new Date();
+  if (type === "daily") return now.toDateString();
+  if (type === "weekly") {
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay());
+    return `week-${start.toDateString()}`;
+  }
+  return `month-${now.getFullYear()}-${now.getMonth()}`;
+}
+
+// ── Profile ───────────────────────────────────────────────────────────────────
 export type Profile = {
   name: string;
   level: number;
@@ -47,14 +150,23 @@ export type Profile = {
   dailyLoginDay: number;
   lastLoginDate: string | null;
   seasonPoints: number;
+  // Cards
+  cards: Record<string, number>;
+  // Missions
+  missionProgress: Record<string, number>;
+  missionClaimed: Record<string, string>; // missionId -> periodKey when claimed
+  missionStats: MissionStats;
+  missionStatsPeriod: Record<MissionType, string>; // last period key for stats reset
+  // Offline
+  lastActiveTs: number;
 };
 
 const DEFAULT_PROFILE: Profile = {
   name: "Comandante",
   level: 1,
   xp: 0,
-  coins: 0,
-  gems: 0,
+  coins: 500,
+  gems: 10,
   energy: 30,
   maxEnergy: 30,
   league: "Bronze",
@@ -79,10 +191,40 @@ const DEFAULT_PROFILE: Profile = {
   dailyLoginDay: 0,
   lastLoginDate: null,
   seasonPoints: 0,
+  cards: {},
+  missionProgress: {},
+  missionClaimed: {},
+  missionStats: { gamesPlayed: 0, gamesWon: 0, coinsEarned: 0, territoriesCaptured: 0 },
+  missionStatsPeriod: { daily: "", weekly: "", monthly: "" },
+  lastActiveTs: Date.now(),
 };
 
-const STORAGE_KEY = "@empire_clash_profile_v5";
+const STORAGE_KEY = "@empire_clash_profile_v6";
 
+// ── Offline reward calculation ─────────────────────────────────────────────────
+const OFFLINE_COINS_PER_HOUR = 60;
+const OFFLINE_CARDS_PER_6H = 1;
+const MAX_OFFLINE_HOURS = 12;
+
+export type OfflineReward = {
+  hoursAway: number;
+  coins: number;
+  cards: string[];
+};
+
+export function calcOfflineReward(lastActiveTs: number): OfflineReward | null {
+  const nowTs = Date.now();
+  const diffMs = nowTs - lastActiveTs;
+  const diffHours = Math.min(diffMs / (1000 * 60 * 60), MAX_OFFLINE_HOURS);
+  if (diffHours < 0.5) return null;
+  const coins = Math.floor(diffHours * OFFLINE_COINS_PER_HOUR);
+  const cardCount = Math.floor(diffHours / 6) * OFFLINE_CARDS_PER_6H;
+  const cards: string[] = [];
+  for (let i = 0; i < cardCount; i++) cards.push(rollCard());
+  return { hoursAway: Math.floor(diffHours), coins, cards };
+}
+
+// ── Context types ─────────────────────────────────────────────────────────────
 type Ctx = {
   profile: Profile;
   ready: boolean;
@@ -112,6 +254,16 @@ type Ctx = {
   enemyCountForLevel: () => number;
   multiplayerUnlocked: boolean;
   reset: () => void;
+  // Cards
+  addCards: (cardIds: string[]) => void;
+  // Missions
+  getMissions: (type: MissionType) => Array<MissionDef & { progress: number; claimed: boolean; periodKey: string }>;
+  claimMission: (missionId: string) => boolean;
+  recordMissionStat: (stat: keyof MissionStats, amount: number) => void;
+  // Offline
+  pendingOfflineReward: OfflineReward | null;
+  claimOfflineReward: (doubled: boolean) => void;
+  touchActiveTs: () => void;
 };
 
 const GameCtx = createContext<Ctx | null>(null);
@@ -130,10 +282,10 @@ function xpForLevel(level: number) {
 }
 
 export const UPGRADE_COSTS = {
-  upgGrowth: (lvl: number) => 500 + lvl * 400,
-  upgAttack: (lvl: number) => 700 + lvl * 500,
-  upgStart: (lvl: number) => 600 + lvl * 450,
-  upgPlaneSpeed: (lvl: number) => 800 + lvl * 600,
+  upgGrowth:    (lvl: number) => 500  + lvl * 400,
+  upgAttack:    (lvl: number) => 700  + lvl * 500,
+  upgStart:     (lvl: number) => 600  + lvl * 450,
+  upgPlaneSpeed:(lvl: number) => 800  + lvl * 600,
 };
 
 export const PLANE_COSTS: Record<PlaneTier, number> = {
@@ -147,6 +299,9 @@ export const PLANE_COSTS: Record<PlaneTier, number> = {
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [ready, setReady] = useState(false);
+  const [pendingOfflineReward, setPendingOfflineReward] =
+    useState<OfflineReward | null>(null);
+  const offlineChecked = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -154,7 +309,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw) as Partial<Profile>;
-          setProfile({ ...DEFAULT_PROFILE, ...parsed });
+          const merged: Profile = { ...DEFAULT_PROFILE, ...parsed };
+
+          // Check offline reward before setting profile
+          if (!offlineChecked.current) {
+            offlineChecked.current = true;
+            const reward = calcOfflineReward(
+              merged.lastActiveTs ?? Date.now() - 1000 * 60 * 60,
+            );
+            if (reward) setPendingOfflineReward(reward);
+          }
+
+          merged.lastActiveTs = Date.now();
+          setProfile(merged);
         }
       } catch {}
       setReady(true);
@@ -201,7 +368,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setProfile((p) => ({ ...p, energy: p.maxEnergy }));
 
   const addEnergy = (n: number) =>
-    setProfile((p) => ({ ...p, energy: Math.min(p.maxEnergy, p.energy + n) }));
+    setProfile((p) => ({
+      ...p,
+      energy: Math.min(p.maxEnergy, p.energy + n),
+    }));
 
   const addXp = (n: number) => {
     let leveledUp = false;
@@ -234,7 +404,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const addWin = () =>
     setProfile((p) => ({ ...p, totalWins: p.totalWins + 1 }));
 
-  const buySkin = (id: string, cost: number, currency: "coins" | "gems") => {
+  const buySkin = (
+    id: string,
+    cost: number,
+    currency: "coins" | "gems",
+  ) => {
     if (profile.ownedSkins.includes(id)) return false;
     if (currency === "coins") {
       if (profile.coins < cost) return false;
@@ -268,7 +442,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       ...p,
       coins: p.coins - cost,
       planeTier: next,
-      planeLevels: { ...p.planeLevels, [String(next)]: Math.max(p.planeLevels[String(next)] ?? 0, 1) },
+      planeLevels: {
+        ...p.planeLevels,
+        [String(next)]: Math.max(p.planeLevels[String(next)] ?? 0, 1),
+      },
     }));
     return true;
   };
@@ -286,7 +463,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const k = String(tier);
     const shards = profile.planeShards[k] ?? 0;
     const lvl = profile.planeLevels[k] ?? 0;
-    if (lvl > 0) return false; // already unlocked
+    if (lvl > 0) return false;
     if (shards < 10) return false;
     const cost = PLANE_COSTS[tier];
     if (!freeFromAd && profile.coins < cost) return false;
@@ -369,12 +546,106 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       dailyLoginDay: day,
       lastLoginDate: today,
       coins: type === "coins" ? p.coins + reward : p.coins,
-      gems: type === "gems" ? p.gems + Math.floor(reward / 10) : p.gems,
+      gems:
+        type === "gems" ? p.gems + Math.floor(reward / 10) : p.gems,
     }));
     return {
       reward: type === "gems" ? Math.floor(reward / 10) : reward,
       type,
     };
+  };
+
+  // ── Cards ────────────────────────────────────────────────────────────────
+  const addCards = (cardIds: string[]) => {
+    setProfile((p) => {
+      const cards = { ...p.cards };
+      for (const id of cardIds) {
+        cards[id] = (cards[id] ?? 0) + 1;
+      }
+      return { ...p, cards };
+    });
+  };
+
+  // ── Missions ─────────────────────────────────────────────────────────────
+  const getMissions = (type: MissionType) => {
+    return MISSION_DEFS.filter((m) => m.type === type).map((m) => {
+      const periodKey = getMissionPeriodKey(type);
+      const progress = profile.missionProgress[`${m.id}__${periodKey}`] ?? 0;
+      const claimed = profile.missionClaimed[m.id] === periodKey;
+      return { ...m, progress, claimed, periodKey };
+    });
+  };
+
+  const claimMission = (missionId: string): boolean => {
+    const def = MISSION_DEFS.find((m) => m.id === missionId);
+    if (!def) return false;
+    const periodKey = getMissionPeriodKey(def.type);
+    const progress =
+      profile.missionProgress[`${missionId}__${periodKey}`] ?? 0;
+    const claimed = profile.missionClaimed[missionId] === periodKey;
+    if (claimed || progress < def.goal) return false;
+
+    setProfile((p) => {
+      const cards = { ...p.cards };
+      const cardCount = def.reward.cards ?? 0;
+      for (let i = 0; i < cardCount; i++) {
+        const id = rollCard();
+        cards[id] = (cards[id] ?? 0) + 1;
+      }
+      return {
+        ...p,
+        coins: p.coins + (def.reward.coins ?? 0),
+        gems: p.gems + (def.reward.gems ?? 0),
+        cards,
+        missionClaimed: { ...p.missionClaimed, [missionId]: periodKey },
+      };
+    });
+    return true;
+  };
+
+  const recordMissionStat = (stat: keyof MissionStats, amount: number) => {
+    setProfile((p) => {
+      const updatedProgress = { ...p.missionProgress };
+      for (const def of MISSION_DEFS) {
+        if (def.stat !== stat) continue;
+        const periodKey = getMissionPeriodKey(def.type);
+        const key = `${def.id}__${periodKey}`;
+        updatedProgress[key] = Math.min(
+          (updatedProgress[key] ?? 0) + amount,
+          def.goal,
+        );
+      }
+      return {
+        ...p,
+        missionStats: { ...p.missionStats, [stat]: p.missionStats[stat] + amount },
+        missionProgress: updatedProgress,
+      };
+    });
+  };
+
+  // ── Offline rewards ───────────────────────────────────────────────────────
+  const claimOfflineReward = (doubled: boolean) => {
+    if (!pendingOfflineReward) return;
+    const { coins, cards } = pendingOfflineReward;
+    const mult = doubled ? 2 : 1;
+    setProfile((p) => {
+      const updatedCards = { ...p.cards };
+      const allCards = doubled ? [...cards, ...cards] : cards;
+      for (const id of allCards) {
+        updatedCards[id] = (updatedCards[id] ?? 0) + 1;
+      }
+      return {
+        ...p,
+        coins: p.coins + coins * mult,
+        cards: updatedCards,
+        lastActiveTs: Date.now(),
+      };
+    });
+    setPendingOfflineReward(null);
+  };
+
+  const touchActiveTs = () => {
+    setProfile((p) => ({ ...p, lastActiveTs: Date.now() }));
   };
 
   const reset = () => {
@@ -417,6 +688,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         },
         multiplayerUnlocked: profile.level >= 10,
         reset,
+        addCards,
+        getMissions,
+        claimMission,
+        recordMissionStat,
+        pendingOfflineReward,
+        claimOfflineReward,
+        touchActiveTs,
       }}
     >
       {children}

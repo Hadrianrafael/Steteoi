@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { game } from "@/constants/colors";
-import { useGame } from "@/contexts/GameContext";
+import { CARD_DEFS, rollCard, useGame } from "@/contexts/GameContext";
 import { showRewardedAd } from "@/lib/admob";
 import { PLAYER_NAMES } from "@/lib/gameEngine";
 
@@ -22,7 +22,17 @@ export default function ResultScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ winner?: string }>();
-  const { addCoins, addGems, addXp, addTrophies, addWin, addPlaneShards } = useGame();
+  const {
+    addCoins,
+    addGems,
+    addXp,
+    addTrophies,
+    addWin,
+    addPlaneShards,
+    addCards,
+    recordMissionStat,
+    touchActiveTs,
+  } = useGame();
 
   const won = params.winner === "player";
   const winnerName =
@@ -32,6 +42,11 @@ export default function ResultScreen() {
     tier: (Math.floor(Math.random() * 4) + 2) as 2 | 3 | 4 | 5,
     n: won ? Math.floor(Math.random() * 2) + 2 : 1,
   }).current;
+
+  // Card rewards (1–2 cards per match, rare-biased on win)
+  const cardReward = useRef<string[]>(
+    Array.from({ length: won ? 2 : 1 }, () => rollCard()),
+  ).current;
 
   const coins = won ? 250 : 50;
   const gems = won ? 5 : 1;
@@ -54,7 +69,15 @@ export default function ResultScreen() {
     addXp(xp);
     addTrophies(trophies);
     addPlaneShards(shardReward.tier, shardReward.n);
-    if (won) addWin();
+    addCards(cardReward);
+    // Record mission stats
+    recordMissionStat("gamesPlayed", 1);
+    recordMissionStat("coinsEarned", coins);
+    if (won) {
+      addWin();
+      recordMissionStat("gamesWon", 1);
+    }
+    touchActiveTs();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTriple = () => {
@@ -63,6 +86,7 @@ export default function ResultScreen() {
     showRewardedAd({
       onEarned: () => {
         addCoins(coins * 2); // +2x = total 3x
+        addCards(cardReward); // double cards too
         setTripled(true);
         setLoadingAd(false);
       },
@@ -70,8 +94,21 @@ export default function ResultScreen() {
     });
   };
 
+  // Get card defs for display
+  const cardDefs = cardReward.map(
+    (id) => CARD_DEFS.find((c) => c.id === id)!,
+  );
+
+  const RARITY_COLOR: Record<string, string> = {
+    legendary: "#FFD700",
+    epic: "#A855F7",
+    rare: "#3B82F6",
+    uncommon: "#22C55E",
+    common: "#94A3B8",
+  };
+
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 40 }]}>
+    <View style={[styles.root, { paddingTop: insets.top + 32 }]}>
       <LinearGradient
         colors={[
           (won ? game.gold : game.primary) + "44",
@@ -92,7 +129,7 @@ export default function ResultScreen() {
         >
           <FontAwesome5
             name={won ? "crown" : "skull-crossbones"}
-            size={64}
+            size={58}
             color={won ? game.bgDeep : game.text}
           />
         </LinearGradient>
@@ -121,12 +158,43 @@ export default function ResultScreen() {
           label="Troféus"
           value={`${trophies > 0 ? "+" : ""}${trophies}`}
         />
-        <Reward
-          icon="puzzle-piece"
-          color={game.gem}
-          label={`Figurinha T${shardReward.tier}`}
-          value={`+${shardReward.n}`}
-        />
+      </View>
+
+      {/* Card rewards */}
+      <View style={styles.cardRow}>
+        {cardDefs.map((cd, i) => {
+          if (!cd) return null;
+          const col = RARITY_COLOR[cd.rarity];
+          const colorHex =
+            cd.color === "blue"
+              ? "#3B82F6"
+              : cd.color === "red"
+                ? "#EF4444"
+                : "#EAB308";
+          return (
+            <View key={i} style={[styles.cardChip, { borderColor: col + "77" }]}>
+              <LinearGradient
+                colors={[colorHex + "33", "transparent"]}
+                style={StyleSheet.absoluteFillObject}
+              />
+              <FontAwesome5
+                name={
+                  cd.color === "blue"
+                    ? "star"
+                    : cd.color === "red"
+                      ? "fire"
+                      : "coins"
+                }
+                size={16}
+                color={col}
+              />
+              <Text style={[styles.cardChipName, { color: game.text }]} numberOfLines={1}>
+                {cd.name}
+              </Text>
+              <View style={[styles.rarityDot, { backgroundColor: col }]} />
+            </View>
+          );
+        })}
       </View>
 
       {/* Triple coins rewarded ad */}
@@ -153,10 +221,10 @@ export default function ResultScreen() {
             <Text style={styles.tripleBtnText}>
               {loadingAd
                 ? "Carregando anúncio…"
-                : "ASSISTIR PARA TRIPLICAR MOEDAS"}
+                : "ASSISTIR E DOBRAR RECOMPENSAS"}
             </Text>
             <View style={styles.tripleMultTag}>
-              <Text style={styles.tripleMultText}>3×</Text>
+              <Text style={styles.tripleMultText}>2×</Text>
             </View>
           </LinearGradient>
         </Pressable>
@@ -164,7 +232,7 @@ export default function ResultScreen() {
         <View style={styles.tripledBanner}>
           <FontAwesome5 name="check-circle" size={16} color={game.success} />
           <Text style={styles.tripledText}>
-            Moedas triplicadas! +{coins * 3} moedas recebidas.
+            Recompensas dobradas! +{coins * 3} moedas e +{cardReward.length * 2} cartas.
           </Text>
         </View>
       )}
@@ -204,7 +272,12 @@ function Reward({
   boosted?: boolean;
 }) {
   return (
-    <View style={[styles.rewardCard, boosted && { borderColor: game.gold, borderWidth: 1.5 }]}>
+    <View
+      style={[
+        styles.rewardCard,
+        boosted && { borderColor: game.gold, borderWidth: 1.5 },
+      ]}
+    >
       <View style={[styles.rewardIcon, { backgroundColor: color + "22" }]}>
         <FontAwesome5 name={icon} size={18} color={color} />
       </View>
@@ -219,24 +292,24 @@ function Reward({
 const styles = StyleSheet.create({
   root: { flex: 1, alignItems: "center", paddingHorizontal: 24 },
   crown: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    padding: 6,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    padding: 5,
     backgroundColor: game.gold + "33",
   },
   crownInner: {
     flex: 1,
-    borderRadius: 70,
+    borderRadius: 65,
     alignItems: "center",
     justifyContent: "center",
   },
   headline: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 42,
+    fontSize: 38,
     letterSpacing: 4,
-    marginTop: 22,
+    marginTop: 18,
   },
   sub: {
     color: game.textDim,
@@ -249,8 +322,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 12,
-    marginTop: 30,
+    gap: 10,
+    marginTop: 22,
   },
   rewardCard: {
     alignItems: "center",
@@ -260,11 +333,11 @@ const styles = StyleSheet.create({
     backgroundColor: game.surface,
     borderWidth: 1,
     borderColor: game.border,
-    minWidth: 70,
+    minWidth: 68,
   },
   rewardIcon: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
@@ -272,31 +345,60 @@ const styles = StyleSheet.create({
   rewardValue: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 15,
+    fontSize: 14,
   },
   rewardLabel: {
     color: game.muted,
     fontFamily: "Inter_500Medium",
     fontSize: 10,
   },
+  cardRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 16,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  cardChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: game.surface,
+    borderWidth: 1.5,
+    overflow: "hidden",
+    maxWidth: 150,
+  },
+  cardChipName: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    flex: 1,
+  },
+  rarityDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
   tripleBtn: {
     width: "100%",
     borderRadius: 16,
     overflow: "hidden",
-    marginTop: 20,
+    marginTop: 18,
   },
   tripleBtnInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    paddingVertical: 16,
+    paddingVertical: 15,
     paddingHorizontal: 18,
   },
   tripleBtnText: {
     color: game.bgDeep,
     fontFamily: "Inter_900Black",
-    fontSize: 14,
+    fontSize: 13,
     letterSpacing: 1,
     flex: 1,
     textAlign: "center",
@@ -316,7 +418,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginTop: 20,
+    marginTop: 18,
     padding: 14,
     borderRadius: 12,
     backgroundColor: game.success + "22",
@@ -328,8 +430,9 @@ const styles = StyleSheet.create({
     color: game.text,
     fontFamily: "Inter_700Bold",
     fontSize: 13,
+    flex: 1,
   },
-  actions: { width: "100%", gap: 10, marginTop: 24 },
+  actions: { width: "100%", gap: 10, marginTop: 20 },
   menuBtn: { alignItems: "center", paddingVertical: 10 },
   menuBtnText: {
     color: game.muted,

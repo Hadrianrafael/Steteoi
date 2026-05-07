@@ -9,40 +9,26 @@ type AdMobConfig = {
   useTestAds: boolean;
 };
 
-type UnityAdsConfig = {
-  androidGameId: string;
-  iosGameId: string;
-  rewardedAndroidPlacement: string;
-  interstitialAndroidPlacement: string;
-  useTestAds: boolean;
-};
-
 function getExtra<T>(key: string): T | undefined {
   const extra = Constants.expoConfig?.extra as Record<string, unknown> | undefined;
   return extra?.[key] as T | undefined;
 }
 
+// Real production AdMob IDs for Empire Clash
+const REAL_IDS: AdMobConfig = {
+  androidAppId:     "ca-app-pub-1752902298077786~3887343530",
+  iosAppId:         "ca-app-pub-1752902298077786~3887343530",
+  rewardedAndroid:  "ca-app-pub-1752902298077786/8272251612",
+  interstitialAndroid: "ca-app-pub-1752902298077786/8252070315",
+  useTestAds: false,
+};
+
 export const AdConfig = {
-  admob: getExtra<AdMobConfig>("admob") ?? {
-    androidAppId: "ca-app-pub-3940256099942544~3347511713",
-    iosAppId: "ca-app-pub-3940256099942544~3347511713",
-    rewardedAndroid: "ca-app-pub-3940256099942544/5224354917",
-    interstitialAndroid: "ca-app-pub-3940256099942544/1033173712",
-    useTestAds: true,
-  },
-  unityAds: getExtra<UnityAdsConfig>("unityAds") ?? {
-    androidGameId: "1234567",
-    iosGameId: "1234568",
-    rewardedAndroidPlacement: "Rewarded_Android",
-    interstitialAndroidPlacement: "Interstitial_Android",
-    useTestAds: true,
-  },
+  admob: getExtra<AdMobConfig>("admob") ?? REAL_IDS,
 };
 
 export function getAndroidAdMobAppId() {
-  return Platform.OS === "android" ? AdConfig.admob.androidAppId : AdConfig.admob.iosAppId;
-}
-
-export function getAndroidUnityGameId() {
-  return Platform.OS === "android" ? AdConfig.unityAds.androidGameId : AdConfig.unityAds.iosGameId;
+  return Platform.OS === "android"
+    ? AdConfig.admob.androidAppId
+    : AdConfig.admob.iosAppId;
 }

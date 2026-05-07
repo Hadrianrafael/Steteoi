@@ -52,11 +52,13 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen name="shop" options={{ title: "Loja" }} />
-      <Stack.Screen name="planes" options={{ title: "Aviões" }} />
+      <Stack.Screen name="planes" options={{ title: "Arsenal — Aviões" }} />
       <Stack.Screen name="upgrades" options={{ title: "Melhorias" }} />
       <Stack.Screen name="skills" options={{ title: "Habilidades" }} />
       <Stack.Screen name="ranking" options={{ title: "Ranking" }} />
       <Stack.Screen name="events" options={{ title: "Eventos" }} />
+      <Stack.Screen name="missions" options={{ title: "Missões" }} />
+      <Stack.Screen name="cards" options={{ title: "Cartas" }} />
       <Stack.Screen
         name="settings"
         options={{ title: "Configurações", presentation: "modal" }}

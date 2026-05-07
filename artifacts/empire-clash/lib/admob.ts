@@ -5,38 +5,29 @@
  *    → Simula o anúncio com um timer de 4 s (sem SDK nativo)
  *
  * ② Build nativa (APK/AAB via EAS Build)
- *    → Usa react-native-google-mobile-ads com IDs reais ou de teste
- *
- * Para ativar o SDK real no build:
- *   1. Adicione em artifacts/empire-clash:
- *        pnpm add react-native-google-mobile-ads
- *   2. Adicione o plugin em app.json → plugins:
- *        ["react-native-google-mobile-ads", { "androidAppId": "ca-app-pub-XXX~XXX" }]
- *   3. Substitua extra.admob.androidAppId / rewardedAndroid / interstitialAndroid
- *      pelos IDs reais do AdMob console.
- *   4. Mude extra.admob.useTestAds para false em produção.
+ *    → Usa react-native-google-mobile-ads com IDs reais
  */
 
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-// ─── Configuração ──────────────────────────────────────────────────────────
-const admobExtra = Constants.expoConfig?.extra?.admob as Record<string, string | boolean> | undefined;
+const admobExtra = Constants.expoConfig?.extra?.admob as
+  | Record<string, string | boolean>
+  | undefined;
 
 export const AD_CONFIG = {
   androidAppId:
     (admobExtra?.androidAppId as string | undefined) ??
-    "ca-app-pub-3940256099942544~3347511713",
+    "ca-app-pub-1752902298077786~3887343530",
   rewardedId:
     (admobExtra?.rewardedAndroid as string | undefined) ??
-    "ca-app-pub-3940256099942544/5224354917",
+    "ca-app-pub-1752902298077786/8272251612",
   interstitialId:
     (admobExtra?.interstitialAndroid as string | undefined) ??
-    "ca-app-pub-3940256099942544/1033173712",
-  useTestAds: (admobExtra?.useTestAds as boolean | undefined) ?? true,
+    "ca-app-pub-1752902298077786/8252070315",
+  useTestAds: (admobExtra?.useTestAds as boolean | undefined) ?? false,
 };
 
-// ─── SDK nativo (opcional — só disponível em builds nativas) ────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let NativeAdMob: any = null;
 
@@ -45,7 +36,7 @@ function tryLoadNativeSDK() {
   try {
     NativeAdMob = require("react-native-google-mobile-ads");
   } catch {
-    NativeAdMob = false; // package not installed — use simulation
+    NativeAdMob = false;
   }
 }
 
@@ -57,30 +48,26 @@ export async function initAdMob() {
   } catch {}
 }
 
-// ─── Rewarded Ad ────────────────────────────────────────────────────────────
 type RewardedOpts = {
   onEarned: () => void;
   onDismissed?: () => void;
 };
 
-/**
- * Mostra um anúncio premiado.
- * Em dev → simula com timer de 4 s, chama onEarned automaticamente.
- * Em produção (build nativa) → usa AdMob real.
- *
- * Retorna uma função de cancelamento.
- */
-export function showRewardedAd({ onEarned, onDismissed }: RewardedOpts): () => void {
+export function showRewardedAd({
+  onEarned,
+  onDismissed,
+}: RewardedOpts): () => void {
   tryLoadNativeSDK();
 
   if (!NativeAdMob) {
     return simulateRewarded(onEarned, onDismissed);
   }
 
-  const { RewardedAd, AdEventType, RewardedAdEventType, TestIds } = NativeAdMob;
+  const { RewardedAd, AdEventType, RewardedAdEventType, TestIds } =
+    NativeAdMob;
   const adId = AD_CONFIG.useTestAds ? TestIds.REWARDED : AD_CONFIG.rewardedId;
   const ad = RewardedAd.createForAdRequest(adId, {
-    requestNonPersonalizedAdsOnly: AD_CONFIG.useTestAds,
+    requestNonPersonalizedAdsOnly: false,
   });
 
   let rewarded = false;
@@ -107,27 +94,22 @@ export function showRewardedAd({ onEarned, onDismissed }: RewardedOpts): () => v
   };
 }
 
-// ─── Interstitial Ad ────────────────────────────────────────────────────────
 type InterstitialOpts = { onClosed?: () => void };
 
-/**
- * Mostra um intersticial (entre partidas).
- * Em dev → não exibe nada, chama onClosed imediatamente.
- * Em produção → usa AdMob real.
- */
 export function showInterstitialAd({ onClosed }: InterstitialOpts = {}): void {
   tryLoadNativeSDK();
 
   if (!NativeAdMob) {
-    // Skip interstitial in dev — don't interrupt flow with a timer
     onClosed?.();
     return;
   }
 
   const { InterstitialAd, AdEventType, TestIds } = NativeAdMob;
-  const adId = AD_CONFIG.useTestAds ? TestIds.INTERSTITIAL : AD_CONFIG.interstitialId;
+  const adId = AD_CONFIG.useTestAds
+    ? TestIds.INTERSTITIAL
+    : AD_CONFIG.interstitialId;
   const ad = InterstitialAd.createForAdRequest(adId, {
-    requestNonPersonalizedAdsOnly: AD_CONFIG.useTestAds,
+    requestNonPersonalizedAdsOnly: false,
   });
 
   const s = ad.addAdEventListener(AdEventType.CLOSED, () => {
@@ -142,10 +124,12 @@ export function showInterstitialAd({ onClosed }: InterstitialOpts = {}): void {
   ad.load();
 }
 
-// ─── Simulação (dev) ────────────────────────────────────────────────────────
 const AD_SIMULATION_MS = 4000;
 
-function simulateRewarded(onEarned: () => void, onDismissed?: () => void): () => void {
+function simulateRewarded(
+  onEarned: () => void,
+  onDismissed?: () => void,
+): () => void {
   let cancelled = false;
   const t = setTimeout(() => {
     if (!cancelled) onEarned();
