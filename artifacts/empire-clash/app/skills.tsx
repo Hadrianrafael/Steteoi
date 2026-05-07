@@ -10,7 +10,7 @@ const SKILLS: {
   key: SkillKey;
   name: string;
   desc: string;
-  icon: keyof typeof import("@expo/vector-icons/FontAwesome5").default.glyphMap;
+  icon: string;
   color: string;
   cost: number;
 }[] = [

@@ -1,122 +1,139 @@
-# 🚀 Empire Clash — Guia de Build para Google Play Store
+# Empire Clash — Guia de Build para Google Play Store
+
+## Visão Geral
+
+- **Package:** `com.hadrian.empireclash`
+- **SDK Expo:** 54
+- **React Native:** 0.81.5
+- **AdMob App ID:** `ca-app-pub-1752902298077786~3887343530`
+- **Build:** AAB via EAS Build (`:app:bundleRelease`)
+
+---
 
 ## Pré-requisitos
 
-1. **Conta Expo (EAS)** — crie em https://expo.dev
-2. **EAS CLI** instalado globalmente:
-   ```bash
-   npm install -g eas-cli
-   ```
-3. **Login no EAS:**
-   ```bash
-   eas login
-   ```
+```bash
+npm install -g eas-cli
+eas login
+```
 
 ---
 
-## 📁 Estrutura de Assets
+## 1. Configurar AdMob para Build Nativa
 
-Os assets obrigatórios já existem em:
-```
-assets/
-  icon.png           — ícone do app (1024×1024 px recomendado)
-  splash.png         — tela de splash (2048×2048 px recomendado)
-  adaptive-icon.png  — ícone adaptativo Android (1024×1024 px)
-```
-
-> Para a Play Store, substitua por imagens de alta qualidade antes do build de produção.
-
----
-
-## ⚙️ Configuração Inicial (uma vez só)
-
-Dentro da pasta `artifacts/empire-clash/`, execute:
+O `react-native-google-mobile-ads` usa dynamic require em dev (sem instalar).
+Para o build nativo, instale e adicione o plugin:
 
 ```bash
-cd artifacts/empire-clash
-eas build:configure
+# 1. Instalar o SDK nativo do AdMob
+pnpm --filter @workspace/empire-clash add react-native-google-mobile-ads
+
+# 2. Adicionar plugin em app.json (dentro de "plugins"):
+# [
+#   "react-native-google-mobile-ads",
+#   {
+#     "androidAppId": "ca-app-pub-1752902298077786~3887343530",
+#     "iosAppId": "ca-app-pub-1752902298077786~3887343530"
+#   }
+# ]
 ```
 
-Isso vinculará o projeto à sua conta Expo e criará um `projectId` em `app.json`.
+### IDs AdMob de Producao
+
+| Tipo          | ID                                               |
+|---------------|--------------------------------------------------|
+| App ID        | `ca-app-pub-1752902298077786~3887343530`         |
+| Rewarded      | `ca-app-pub-1752902298077786/8272251612`         |
+| Interstitial  | `ca-app-pub-1752902298077786/8252070315`         |
 
 ---
 
-## 🔨 Gerar APK de Teste (preview)
+## 2. Configurar Google Play Games (multiplayer futuro)
 
 ```bash
-cd artifacts/empire-clash
-eas build --platform android --profile preview
+pnpm --filter @workspace/empire-clash add @react-native-google-signin/google-signin
+
+# Adicionar em app.json plugins:
+# ["@react-native-google-signin/google-signin", {"iosUrlScheme": "..."}]
 ```
 
-Gera um `.apk` para instalar diretamente no dispositivo ou emulador.
+Configurar OAuth no Google Play Console -> Servicos de jogos -> Autenticacao.
 
 ---
 
-## 📦 Gerar AAB para Play Store (produção)
+## 3. Build de Producao (AAB para Play Store)
 
 ```bash
+# Na pasta do projeto
 cd artifacts/empire-clash
-eas build --platform android --profile production
+
+# Build AAB de producao — gera .aab pronto para a Play Store
+npx eas build -p android --profile production
 ```
 
-Gera um `.aab` (Android App Bundle) pronto para upload na Google Play Store.
-
----
-
-## 🏪 Enviar Direto para a Play Store
-
-Após ter o `play-service-account.json` da Google:
+## 4. Build de Preview (APK para teste interno)
 
 ```bash
-cd artifacts/empire-clash
-eas submit --platform android --profile production
+npx eas build -p android --profile preview
+```
+
+## 5. Build de Desenvolvimento
+
+```bash
+npx eas build -p android --profile development
 ```
 
 ---
 
-## 📋 Informações do App
+## 6. Submit para Play Store (automatico)
 
-| Campo             | Valor                          |
-|-------------------|--------------------------------|
-| Nome              | Empire Clash                   |
-| Slug              | empire-clash                   |
-| Versão            | 1.0.0                          |
-| Android Package   | com.hadrian.empireclash         |
-| iOS Bundle ID     | com.hadrian.empireclash         |
-| Min SDK Android   | 24 (Android 7.0+)              |
-| Target SDK        | 35 (Android 15)                |
-| Orientação        | Portrait only                  |
+```bash
+# Coloque sua service account key em:
+# artifacts/empire-clash/play-service-account.json
 
----
-
-## 🔐 Chaves de Assinatura
-
-O EAS gerencia as chaves de assinatura automaticamente na nuvem.
-Para usar suas próprias chaves, consulte: https://docs.expo.dev/app-signing/managed-credentials/
-
----
-
-## 📱 AdMob — Antes de Publicar
-
-Substitua os IDs de teste em `app.json` → `extra.admob`:
-
-```json
-"admob": {
-  "androidAppId": "ca-app-pub-SEU_ID~SEU_APP_ID",
-  "rewardedAndroid": "ca-app-pub-SEU_ID/SEU_AD_UNIT",
-  "interstitialAndroid": "ca-app-pub-SEU_ID/SEU_AD_UNIT",
-  "useTestAds": false
-}
+npx eas submit -p android --profile production
 ```
 
 ---
 
-## ✅ Checklist antes de publicar
+## 7. Checklist para Play Store
 
-- [ ] Ícones substituídos por imagens de alta qualidade (1024×1024px)
-- [ ] IDs de produção do AdMob configurados
-- [ ] `useTestAds: false` em `app.json`
-- [ ] `projectId` do EAS configurado em `app.json → extra.eas`
-- [ ] `play-service-account.json` gerado no Google Cloud Console
-- [ ] Screenshots do app tiradas para a Play Store (min. 2)
-- [ ] Descrição e categoria definidas no Console da Play Store
+- [ ] AdMob App ID configurado em AndroidManifest via plugin
+- [ ] `useTestAds: false` em app.json extra.admob
+- [ ] `versionCode` incrementado no app.json
+- [ ] Icone 512x512 em assets/icon.png
+- [ ] Splash screen configurada
+- [ ] ProGuard ativado (enableProguardInReleaseBuilds: true)
+- [ ] Hermes ativado (enableHermes: true)
+- [ ] Min SDK 24, Target SDK 35
+- [ ] Package: com.hadrian.empireclash
+- [ ] Play Store listing preenchido (titulo, descricao, screenshots)
+- [ ] Privacy Policy URL configurada
+- [ ] Content rating definido (PEGI 3 ou similar)
+
+---
+
+## 8. Estrutura de Servicos
+
+```
+services/
+  admob.ts           — AdMob rewarded/interstitial (producao + simulacao dev)
+  googlePlayGames.ts — Login Google Play, achievements, leaderboards
+
+lib/
+  admob.ts           — Wrapper (mantido por compatibilidade com telas existentes)
+  ads-config.ts      — IDs e configuracao centralizada
+
+components/jets/
+  JetSvg.tsx         — SVG silhouettes: F-16, F-15, Rafale, Su-57, F-22, Gripen
+```
+
+---
+
+## 9. Notas Importantes
+
+- Em dev/web: AdMob simula com timer de 3.8s (sem SDK nativo necessario)
+- Em build nativa: AdMob usa IDs reais de producao
+- Google Play Games: Login real so funciona com build nativa + configuracao OAuth
+- Metro blockList: bloqueia `.local/` e `node_modules/.cache/` para evitar crash no Replit
+- `@expo/cli 54.0.24` e nao `54.0.33` (versao inexistente no registry)
