@@ -825,13 +825,10 @@ export default function GameScreen() {
                 <View
                   style={[
                     styles.troopBadge,
-                    {
-                      backgroundColor: ownerColor,
-                      borderColor: ts.owner === "neutral" ? "#FFFFFF55" : "#FFFFFF",
-                    },
+                    { borderColor: ownerColor },
                   ]}
                 >
-                  <Text style={styles.troopText}>{ts.troops}</Text>
+                  <Text style={[styles.troopText, { color: ownerColor }]}>{ts.troops}</Text>
                 </View>
               </Pressable>
             );
@@ -949,12 +946,12 @@ export default function GameScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.skillBar}
         >
-          <SkillButton icon="bomb" label="BOMBA" color={game.danger} count={profile.skillNuke} onPress={triggerNuke} />
-          <SkillButton icon="users" label="REFORÇO" color={game.success} count={profile.skillRally} onPress={triggerRally} />
-          <SkillButton icon="shield-alt" label="ESCUDO" color={game.gem} count={profile.skillShield} onPress={triggerShield} disabled={shieldActive} />
-          <SkillButton icon="fire" label="FÚRIA" color={game.primary} count={profile.skillFury} onPress={triggerFury} disabled={furyActive} />
-          <SkillButton icon="snowflake" label="CONGELAR" color="#42A5F5" count={profile.skillFreeze} onPress={triggerFreeze} disabled={freezeActive} />
-          <SkillButton icon="user-secret" label="ESPIÃO" color={game.purple} count={profile.skillSpy} onPress={triggerSpy} disabled={spyActive} />
+          <SkillButton icon="bomb" color={game.danger} count={profile.skillNuke} onPress={triggerNuke} />
+          <SkillButton icon="users" color={game.success} count={profile.skillRally} onPress={triggerRally} />
+          <SkillButton icon="shield-alt" color={game.gem} count={profile.skillShield} onPress={triggerShield} disabled={shieldActive} />
+          <SkillButton icon="fire" color={game.primary} count={profile.skillFury} onPress={triggerFury} disabled={furyActive} />
+          <SkillButton icon="snowflake" color="#42A5F5" count={profile.skillFreeze} onPress={triggerFreeze} disabled={freezeActive} />
+          <SkillButton icon="user-secret" color={game.purple} count={profile.skillSpy} onPress={triggerSpy} disabled={spyActive} />
         </ScrollView>
       </View>
 
@@ -982,14 +979,12 @@ export default function GameScreen() {
 
 function SkillButton({
   icon,
-  label,
   color,
   count,
   onPress,
   disabled,
 }: {
   icon: keyof typeof FontAwesome5.glyphMap;
-  label: string;
   color: string;
   count: number;
   onPress: () => void;
@@ -1003,14 +998,18 @@ function SkillButton({
       style={({ pressed }) => [
         styles.skillBtn,
         {
-          borderColor: ready ? color : game.border,
-          opacity: ready ? (pressed ? 0.7 : 1) : 0.4,
+          borderColor: ready ? color + "BB" : "#FFFFFF18",
+          backgroundColor: ready ? color + "28" : "#0D226055",
+          shadowColor: ready ? color : "transparent",
+          shadowOpacity: ready ? 0.55 : 0,
+          shadowRadius: ready ? 10 : 0,
+          elevation: ready ? 8 : 0,
+          opacity: ready ? (pressed ? 0.72 : 1) : 0.28,
         },
       ]}
     >
-      <FontAwesome5 name={icon} size={20} color={ready ? color : game.muted} />
-      <Text style={styles.skillLabel}>{label}</Text>
-      <View style={[styles.skillCount, { backgroundColor: color }]}>
+      <FontAwesome5 name={icon} size={22} color={ready ? color : game.muted} />
+      <View style={[styles.skillCount, { backgroundColor: ready ? color : game.surface, borderColor: game.bgDeep }]}>
         <Text style={styles.skillCountText}>{count}</Text>
       </View>
     </Pressable>
@@ -1018,34 +1017,45 @@ function SkillButton({
 }
 
 function Explosion({ x, y }: { x: number; y: number }) {
-  const t = useRef(new Animated.Value(0)).current;
+  const t1 = useRef(new Animated.Value(0)).current;
+  const t2 = useRef(new Animated.Value(0)).current;
+  const flash = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
-    Animated.timing(t, {
-      toValue: 1,
-      duration: 700,
-      useNativeDriver: true,
-      easing: Easing.out(Easing.quad),
-    }).start();
-  }, [t]);
-  const scale = t.interpolate({ inputRange: [0, 1], outputRange: [0.4, 2.4] });
-  const opacity = t.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+    Animated.timing(t1, { toValue: 1, duration: 550, useNativeDriver: true, easing: Easing.out(Easing.quad) }).start();
+    Animated.timing(flash, { toValue: 0, duration: 280, useNativeDriver: true }).start();
+    setTimeout(() => {
+      Animated.timing(t2, { toValue: 1, duration: 480, useNativeDriver: true, easing: Easing.out(Easing.cubic) }).start();
+    }, 80);
+  }, [t1, t2, flash]);
+
+  const scale1 = t1.interpolate({ inputRange: [0, 1], outputRange: [0.1, 2.8] });
+  const opacity1 = t1.interpolate({ inputRange: [0, 0.25, 1], outputRange: [1, 0.85, 0] });
+
+  const scale2 = t2.interpolate({ inputRange: [0, 1], outputRange: [0.2, 4.0] });
+  const opacity2 = t2.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0.75, 0.5, 0] });
+
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={{
-        position: "absolute",
-        left: x - 22,
-        top: y - 22,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: game.gold + "AA",
-        borderWidth: 2,
-        borderColor: game.primary,
-        transform: [{ scale }],
-        opacity,
-      }}
-    />
+    <View pointerEvents="none" style={{ position: "absolute", left: x - 28, top: y - 28, width: 56, height: 56 }}>
+      {/* White flash */}
+      <Animated.View style={{
+        position: "absolute", left: 10, top: 10, right: 10, bottom: 10,
+        borderRadius: 18, backgroundColor: "#FFFFFF", opacity: flash,
+      }} />
+      {/* Inner gold burst */}
+      <Animated.View style={{
+        position: "absolute", left: 6, top: 6, right: 6, bottom: 6,
+        borderRadius: 22, backgroundColor: game.gold + "CC",
+        transform: [{ scale: scale1 }], opacity: opacity1,
+      }} />
+      {/* Outer red ring */}
+      <Animated.View style={{
+        position: "absolute", left: 4, top: 4, right: 4, bottom: 4,
+        borderRadius: 24, borderWidth: 3, borderColor: game.primary,
+        backgroundColor: "transparent",
+        transform: [{ scale: scale2 }], opacity: opacity2,
+      }} />
+    </View>
   );
 }
 
@@ -1133,7 +1143,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    backgroundColor: "#0A1A45CC",
+    backgroundColor: "rgba(6,6,26,0.82)",
+    borderTopWidth: 1,
+    borderTopColor: "#FFFFFF0E",
   },
   flagText: {
     fontSize: 18,
@@ -1141,50 +1153,46 @@ const styles = StyleSheet.create({
   },
   ownerFlag: {
     position: "absolute",
-    top: -2,
-    width: 24,
-    height: 18,
+    top: -3,
+    width: 22,
+    height: 16,
     borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
   },
   ownerFlagText: {
-    fontSize: 11,
+    fontSize: 10,
   },
   troopBadge: {
     position: "absolute",
-    bottom: -2,
-    backgroundColor: game.bgDeep,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: game.border,
-    minWidth: 18,
+    bottom: -4,
+    backgroundColor: "#000000EE",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    minWidth: 22,
     alignItems: "center",
   },
   troopText: {
-    color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 10,
+    fontSize: 11,
   },
   skillBar: {
     flexDirection: "row",
-    paddingHorizontal: 12,
-    gap: 8,
-    paddingTop: 6,
-    paddingBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+    justifyContent: "center",
   },
   skillBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: "#0D2260EE",
+    width: 58,
+    height: 58,
+    borderRadius: 18,
     borderWidth: 1.5,
-    minWidth: 130,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   skillLabel: {
     flex: 1,
@@ -1194,16 +1202,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   skillCount: {
-    width: 22,
-    height: 22,
+    position: "absolute",
+    top: -7,
+    right: -7,
+    width: 21,
+    height: 21,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1.5,
   },
   skillCountText: {
     color: game.text,
     fontFamily: "Inter_900Black",
-    fontSize: 11,
+    fontSize: 10,
   },
   toast: {
     position: "absolute",

@@ -1,0 +1,68 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1024' height='500'>
+  <defs>
+    <linearGradient id='bg' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#06061A'/>
+      <stop offset='50%' stop-color='#0A0A1F'/>
+      <stop offset='100%' stop-color='#0D1238'/>
+    </linearGradient>
+    <linearGradient id='gold' x1='0%' y1='0%' x2='100%' y2='0%'>
+      <stop offset='0%' stop-color='#FFB300'/>
+      <stop offset='100%' stop-color='#E63946'/>
+    </linearGradient>
+    <radialGradient id='glow' cx='50%' cy='50%' r='50%'>
+      <stop offset='0%' stop-color='#FFB300' stop-opacity='0.25'/>
+      <stop offset='100%' stop-color='#FFB300' stop-opacity='0'/>
+    </radialGradient>
+    <radialGradient id='glow2' cx='50%' cy='50%' r='50%'>
+      <stop offset='0%' stop-color='#E63946' stop-opacity='0.2'/>
+      <stop offset='100%' stop-color='#E63946' stop-opacity='0'/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <rect width='1024' height='500' fill='url(#bg)'/>
+  <!-- Star field -->
+  <circle cx='80' cy='60' r='1.5' fill='white' opacity='0.4'/>
+  <circle cx='200' cy='120' r='1' fill='white' opacity='0.3'/>
+  <circle cx='350' cy='40' r='2' fill='white' opacity='0.5'/>
+  <circle cx='480' cy='90' r='1' fill='white' opacity='0.25'/>
+  <circle cx='600' cy='30' r='1.5' fill='white' opacity='0.4'/>
+  <circle cx='720' cy='80' r='1' fill='white' opacity='0.35'/>
+  <circle cx='850' cy='50' r='2' fill='white' opacity='0.3'/>
+  <circle cx='950' cy='100' r='1.5' fill='white' opacity='0.45'/>
+  <circle cx='150' cy='350' r='1' fill='white' opacity='0.25'/>
+  <circle cx='900' cy='380' r='1.5' fill='white' opacity='0.3'/>
+  <circle cx='50' cy='430' r='1' fill='white' opacity='0.2'/>
+  <circle cx='980' cy='450' r='1' fill='white' opacity='0.25'/>
+  <!-- Glow orbs -->
+  <ellipse cx='512' cy='250' rx='320' ry='220' fill='url(#glow)'/>
+  <ellipse cx='200' cy='400' rx='200' ry='150' fill='url(#glow2)'/>
+  <!-- EC badge -->
+  <rect x='80' y='160' width='90' height='90' rx='22' fill='url(#gold)'/>
+  <text x='125' y='222' text-anchor='middle' font-family='Arial Black, sans-serif' font-size='36' font-weight='900' fill='white'>EC</text>
+  <!-- Title -->
+  <text x='196' y='208' font-family='Arial Black, sans-serif' font-size='52' font-weight='900' fill='white' letter-spacing='4'>EMPIRE CLASH</text>
+  <!-- Subtitle -->
+  <text x='196' y='245' font-family='Arial, sans-serif' font-size='20' fill='#B5B5D6' letter-spacing='1'>Conquiste o mapa. Domine os céus.</text>
+  <!-- Accent line -->
+  <rect x='196' y='260' width='80' height='4' rx='2' fill='url(#gold)'/>
+  <!-- Feature chips -->
+  <rect x='196' y='300' width='160' height='36' rx='10' fill='#15152F' stroke='#2A2A55' stroke-width='1'/>
+  <text x='276' y='323' text-anchor='middle' font-family='Arial, sans-serif' font-size='14' fill='#3FD0FF'>🛩  6 Aviões Premium</text>
+  <rect x='370' y='300' width='160' height='36' rx='10' fill='#15152F' stroke='#2A2A55' stroke-width='1'/>
+  <text x='450' y='323' text-anchor='middle' font-family='Arial, sans-serif' font-size='14' fill='#FFB300'>🏆  Ranking Global</text>
+  <rect x='544' y='300' width='160' height='36' rx='10' fill='#15152F' stroke='#2A2A55' stroke-width='1'/>
+  <text x='624' y='323' text-anchor='middle' font-family='Arial, sans-serif' font-size='14' fill='#8A4FFF'>🃏  Sistema de Cartas</text>
+  <!-- F-22 silhouette (large, right side) -->
+  <g transform='translate(780, 140) scale(3.5) rotate(15, 40, 80)'>
+    <path d='M40,5 L44,25 L54,40 L47,44 L40,36 L33,44 L26,40 L36,25 Z' fill='#FFB300' opacity='0.9'/>
+    <path d='M33,38 L18,62 L29,57 L35,46 Z' fill='#FFB300' opacity='0.75'/>
+    <path d='M47,38 L62,62 L51,57 L45,46 Z' fill='#FFB300' opacity='0.75'/>
+    <path d='M37,46 L32,68 L38,62 L40,56 Z' fill='#FFB300' opacity='0.55'/>
+    <path d='M43,46 L48,68 L42,62 L40,56 Z' fill='#FFB300' opacity='0.55'/>
+    <path d='M40,8 L42,20 L40,26 L38,20 Z' fill='white' opacity='0.5'/>
+  </g>
+  <!-- Glow under plane -->
+  <ellipse cx='870' cy='340' rx='80' ry='30' fill='#FFB300' opacity='0.12'/>
+  <!-- Bottom tagline -->
+  <text x='512' y='460' text-anchor='middle' font-family='Arial Black, sans-serif' font-size='16' fill='#6B6B8C' letter-spacing='2'>GRÁTIS · DISPONÍVEL NA PLAY STORE</text>
+</svg>
