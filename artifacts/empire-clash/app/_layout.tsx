@@ -78,7 +78,9 @@ function AppShell() {
 
   if (!ready) return <LoadingScreen />;
 
-  if (isFirstLaunch) {
+  // WelcomeScreen: only on real devices (web always skips for preview)
+  const Platform = require("react-native").Platform;
+  if (isFirstLaunch && Platform.OS !== "web") {
     return (
       <WelcomeScreen
         onComplete={(name) => {

@@ -6,105 +6,115 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { game } from "@/constants/colors";
+import { haptic } from "@/services/haptics";
 
-type Item = {
+type Tab = {
   label: string;
   icon: keyof typeof FontAwesome5.glyphMap;
   route: string;
+  color?: string;
 };
 
-const ITEMS: Item[] = [
-  { label: "Loja", icon: "store", route: "/shop" },
-  { label: "Aviões", icon: "plane", route: "/planes" },
-  { label: "Melhorias", icon: "tools", route: "/upgrades" },
-  { label: "Habilidades", icon: "bolt", route: "/skills" },
-  { label: "Ranking", icon: "trophy", route: "/ranking" },
-  { label: "Eventos", icon: "calendar-alt", route: "/events" },
+const TABS: Tab[] = [
+  { label: "Início",   icon: "home",         route: "/",        color: game.gold    },
+  { label: "Arsenal",  icon: "fighter-jet",  route: "/planes",  color: game.gem     },
+  { label: "Missões",  icon: "tasks",        route: "/missions", color: "#22C55E"   },
+  { label: "Cartas",   icon: "layer-group",  route: "/cards",   color: "#A78BFA"    },
+  { label: "Loja",     icon: "store",        route: "/shop",    color: "#F97316"    },
 ];
 
 export function BottomNav() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
-  const webBottom = Platform.OS === "web" ? 30 : 0;
+  const extraBottom = Platform.OS === "web" ? 8 : 0;
 
   return (
-    <LinearGradient
-      colors={[game.bg + "00", game.bgDeep]}
-      style={[styles.wrap, { paddingBottom: insets.bottom + 8 + webBottom }]}
-    >
+    <View style={[styles.wrap, { paddingBottom: insets.bottom + extraBottom }]}>
+      <LinearGradient
+        colors={[game.bgDeep + "F8", game.bgDeep]}
+        style={StyleSheet.absoluteFillObject}
+        start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+      />
+      <View style={styles.border} />
       <View style={styles.row}>
-        {ITEMS.map((item) => {
-          const active = pathname === item.route;
+        {TABS.map((tab) => {
+          const active = pathname === tab.route;
+          const tint = tab.color ?? game.gold;
           return (
             <Pressable
-              key={item.route}
-              onPress={() => router.push(item.route as never)}
-              style={({ pressed }) => [
-                styles.item,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}
+              key={tab.route}
+              onPress={() => { haptic.tap(); router.push(tab.route as never); }}
+              style={({ pressed }) => [styles.tab, { opacity: pressed ? 0.75 : 1 }]}
             >
-              <View
-                style={[
-                  styles.iconWrap,
-                  active && {
-                    backgroundColor: game.gold + "22",
-                    borderColor: game.gold,
-                  },
-                ]}
-              >
+              {active && (
+                <View style={[styles.activePill, { backgroundColor: tint + "22" }]} />
+              )}
+              <View style={[styles.iconWrap, active && { backgroundColor: tint + "18" }]}>
                 <FontAwesome5
-                  name={item.icon}
-                  size={18}
-                  color={active ? game.gold : game.textDim}
+                  name={tab.icon}
+                  size={active ? 17 : 16}
+                  color={active ? tint : game.muted}
                 />
               </View>
-              <Text
-                style={[
-                  styles.label,
-                  { color: active ? game.gold : game.textDim },
-                ]}
-              >
-                {item.label}
+              <Text style={[styles.label, { color: active ? tint : game.muted }]}>
+                {tab.label}
               </Text>
             </Pressable>
           );
         })}
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    paddingTop: 10,
-    paddingHorizontal: 6,
-    borderTopWidth: 1,
-    borderTopColor: game.border,
+    position: "relative",
+    paddingTop: 2,
+    backgroundColor: "transparent",
+  },
+  border: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: game.border + "90",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
-  item: {
+  tab: {
     flex: 1,
     alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
     paddingVertical: 4,
-    gap: 4,
+    position: "relative",
+  },
+  activePill: {
+    position: "absolute",
+    top: -2,
+    left: 8,
+    right: 8,
+    bottom: -2,
+    borderRadius: 14,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
+    width: 38,
+    height: 32,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "transparent",
   },
   label: {
     fontSize: 9,
     fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.2,
   },
 });
