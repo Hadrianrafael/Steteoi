@@ -20,8 +20,12 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { game } from "@/constants/colors";
 import { GameProvider, useGame } from "@/contexts/GameContext";
+import { initAdMob } from "@/services/admob";
 
 SplashScreen.preventAutoHideAsync();
+
+// Inicializar AdMob + consent LGPD/GDPR assim que o JS carrega
+initAdMob().catch(() => {});
 
 const queryClient = new QueryClient();
 

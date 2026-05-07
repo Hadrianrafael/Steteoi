@@ -23,7 +23,9 @@
       "infoPlist": {
         "NSUserTrackingUsageDescription": "Este identificador será usado para mostrar anúncios mais relevantes para você.",
         "SKAdNetworkItems": [
-          { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" }
+          { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" },
+          { "SKAdNetworkIdentifier": "4fzdc2evr5.skadnetwork" },
+          { "SKAdNetworkIdentifier": "2fnua5tdw4.skadnetwork" }
         ]
       }
     },
@@ -68,6 +70,20 @@
       "expo-font",
       "expo-web-browser",
       [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-1752902298077786~3887343530",
+          "iosAppId": "ca-app-pub-1752902298077786~3887343530",
+          "userTrackingUsageDescription": "Este identificador será usado para mostrar anúncios mais relevantes para você.",
+          "skAdNetworkItems": [
+            "cstr6suwn9.skadnetwork",
+            "4fzdc2evr5.skadnetwork",
+            "2fnua5tdw4.skadnetwork"
+          ],
+          "delay_app_measurement_init": true
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
@@ -76,8 +92,7 @@
             "minSdkVersion": 24,
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "enableHermes": true,
-            "useFrameworks": "static"
+            "enableHermes": true
           }
         }
       ]

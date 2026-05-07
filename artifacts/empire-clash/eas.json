@@ -1,10 +1,20 @@
 {
   "cli": {
-    "version": ">= 12.0.0",
-    "appVersionSource": "remote"
+    "version": ">= 14.0.0",
+    "appVersionSource": "remote",
+    "promptToConfigurePushNotifications": false
   },
   "build": {
+    "base": {
+      "android": {
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "production"
+      }
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -13,6 +23,7 @@
       }
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
       "channel": "preview",
       "android": {
@@ -24,14 +35,13 @@
       }
     },
     "production": {
+      "extends": "base",
       "channel": "production",
+      "distribution": "store",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle",
         "gradleCommand": ":app:bundleRelease"
-      },
-      "env": {
-        "EXPO_PUBLIC_ENV": "production"
       }
     }
   },

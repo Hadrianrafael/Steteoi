@@ -12,3 +12,45 @@ id = "2x3GKrD3KD-DpJWLllvPr"
 uri = "file://artifacts/empire-clash/assets/images/menu-bg.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "YsKejUNtOvADGZpJBXSGT"
+uri = "file://artifacts/empire-clash/assets/icon.png"
+type = "image"
+title = "empire clash icon jet"
+
+[[generated]]
+id = "LD36mROJAsLf0FJUgarp6"
+uri = "file://artifacts/empire-clash/assets/adaptive-icon.png"
+type = "image"
+title = "empire clash adaptive icon"
+
+[[generated]]
+id = "a3Nihj6m-yi-VQXj2nStJ"
+uri = "file://artifacts/empire-clash/assets/splash.png"
+type = "image"
+title = "empire clash splash screen"
+
+[[generated]]
+id = "esnO7SpATyb2mvZu6zChY"
+uri = "file://artifacts/empire-clash/assets/feature-graphic.png"
+type = "image"
+title = "empire clash feature graphic"
+
+[[generated]]
+id = "Sb2YyS5-1u129gANOw9Mk"
+uri = "file://artifacts/empire-clash/assets/screenshot-1-menu.png"
+type = "image"
+title = "screenshot main menu"
+
+[[generated]]
+id = "SQXJuFUFjgllJQoA4nJ1u"
+uri = "file://artifacts/empire-clash/assets/screenshot-2-arsenal.png"
+type = "image"
+title = "screenshot arsenal planes"
+
+[[generated]]
+id = "HtJ1VjfNx3wncp5Uq8yai"
+uri = "file://artifacts/empire-clash/assets/screenshot-3-battle.png"
+type = "image"
+title = "screenshot battle screen"

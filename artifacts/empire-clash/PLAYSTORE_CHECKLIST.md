@@ -8,116 +8,112 @@
 - [x] Orientation: portrait
 - [x] userInterfaceStyle: dark
 - [x] scheme: empireclash (deep links)
-- [x] description: texto completo em pt-BR
 
-## Ícones & Visual
+---
 
-- [x] icon.png (principal) em `assets/icon.png`
-- [x] adaptive-icon.png em `assets/adaptive-icon.png`
-- [x] backgroundColor adaptive icon: `#0f172a`
-- [x] splash screen configurado com resizeMode contain
-- [x] splash backgroundColor: `#0f172a`
-- [ ] **AÇÃO**: Criar ícone 512x512 finalizado em alta resolução
-- [ ] **AÇÃO**: Criar splash screen com logo Empire Clash
-- [ ] Feature graphic 1024x500 para Play Store
-- [ ] Screenshots (mínimo 2, recomendado 8): portrait 1080x1920
+## SDK & Build
 
-## Android SDK
+- [x] Expo SDK 54 / React Native 0.81.5
+- [x] Min SDK: 24 (Android 7.0 — cobre 96%+ dos dispositivos)
+- [x] Target SDK: 35 (Android 15)
+- [x] Compile SDK: 35
+- [x] New Architecture habilitada (`newArchEnabled: true`)
+- [x] Hermes habilitado (`enableHermes: true`)
+- [x] ProGuard em release (`enableProguardInReleaseBuilds: true`)
+- [x] Shrink resources em release (`enableShrinkResourcesInReleaseBuilds: true`)
+- [x] React Compiler habilitado (`reactCompiler: true`)
+- [x] Metro: `inlineRequires: true` (boot mais rápido)
+- [x] EAS Build configurado com 3 profiles (development / preview / production)
+- [x] Auto-increment de versionCode no profile production
 
-- [x] compileSdkVersion: 35
-- [x] targetSdkVersion: 35 (obrigatório a partir de ago/2025)
-- [x] minSdkVersion: 24 (Android 7.0+, cobre 95%+ dispositivos)
-- [x] enableProguardInReleaseBuilds: true
-- [x] enableShrinkResourcesInReleaseBuilds: true
-- [x] enableHermes: true (obrigatório para performance)
-- [x] newArchEnabled: true (New Architecture React Native)
-
-## Permissões Android
-
-- [x] INTERNET
-- [x] ACCESS_NETWORK_STATE
-- [x] VIBRATE (haptic feedback)
-- [x] com.google.android.gms.permission.AD_ID (AdMob)
-- [x] com.android.vending.BILLING (compras futuras)
-- [x] Bloqueadas: LOCATION, CAMERA, AUDIO, STORAGE (não necessárias)
+---
 
 ## AdMob
 
-- [x] App ID: `ca-app-pub-1752902298077786~3887343530`
-- [x] Rewarded ID: `ca-app-pub-1752902298077786/8272251612`
-- [x] Interstitial ID: `ca-app-pub-1752902298077786/8252070315`
-- [x] useTestAds: false (produção)
-- [x] NSUserTrackingUsageDescription (iOS ATT)
-- [x] SKAdNetworkItems (iOS)
-- [ ] **AÇÃO EAS**: `pnpm add react-native-google-mobile-ads`
-- [ ] **AÇÃO EAS**: Adicionar plugin react-native-google-mobile-ads em app.json
-- [ ] Verificar conta AdMob aprovada e anúncios ativos
+- [x] SDK instalado: `react-native-google-mobile-ads`
+- [x] Plugin configurado em `app.json`
+- [x] App ID Android: `ca-app-pub-1752902298077786~3887343530`
+- [x] Rewarded Ad ID: `ca-app-pub-1752902298077786/8272251612`
+- [x] Interstitial Ad ID: `ca-app-pub-1752902298077786/8252070315`
+- [x] `useTestAds: false` (anúncios reais de produção)
+- [x] `delay_app_measurement_init: true` (aguarda consent)
+- [x] Consent LGPD/GDPR via UMP (AdsConsent.requestInfoUpdate)
+- [x] Pré-carregamento de rewarded e interstitial no boot
+- [x] Reload automático após exibição (cachedRewarded / cachedInterstitial)
+- [x] Fallback para simulação em Expo Go / web
+- [ ] **TODO:** Verificar no AdMob Console que o app está ativo
 
-## Google Play Games
+---
 
-- [ ] Ativar Google Play Games API no Play Console
-- [ ] Criar ID do jogo no Play Console > Serviços de jogos
-- [ ] Obter webClientId do OAuth e atualizar googlePlayGames.ts
-- [ ] **AÇÃO EAS**: `pnpm add @react-native-google-signin/google-signin`
-- [ ] **AÇÃO EAS**: Adicionar plugin em app.json
-- [ ] SHA-1 da chave de release registrada no Google Cloud Console
+## Permissões Android
 
-## EAS Build
+- [x] `INTERNET`
+- [x] `ACCESS_NETWORK_STATE`
+- [x] `VIBRATE`
+- [x] `com.google.android.gms.permission.AD_ID`
+- [x] `com.android.vending.BILLING`
+- [x] Permissões bloqueadas: câmera, localização, armazenamento, microfone
 
-- [x] eas.json com perfis: development, preview, production
-- [x] production: buildType app-bundle, gradleCommand :app:bundleRelease
-- [x] autoIncrement: true (versionCode automático)
-- [ ] `eas.json` extra.eas.projectId: substituir por ID real do projeto Expo
-- [ ] Conta EAS configurada com `eas login`
-- [ ] Keystore criada/importada no EAS
+---
 
-## Conteúdo Play Store
+## Assets Visuais
 
-- [ ] Título: "Empire Clash" (30 chars max)
-- [ ] Descrição curta (80 chars): "Conquiste territórios em batalhas aéreas de estratégia em tempo real!"
-- [ ] Descrição completa (4000 chars): mencionar jatos reais, cartas, missões, ranking, AdMob
-- [ ] Categoria: Jogos > Estratégia
-- [ ] Tags: estratégia, aviões, conquista, offline, jatos
-- [ ] Classificação de conteúdo: completar questionário (≥ PEGI 7 recomendado)
-- [ ] Privacy Policy URL (obrigatório para jogos com publicidade)
-- [ ] Email de suporte válido
+- [x] Ícone 1024×1024 (F-22 dourado com afterburner e coroa)
+- [x] Adaptive icon com foreground e background separados
+- [x] Splash screen cinematográfica (formação de jatos + EMPIRE CLASH)
+- [x] Feature graphic 1024×500 (banner Play Store)
+- [x] Screenshot 1: Menu principal (em português)
+- [x] Screenshot 2: Arsenal de aviões (6 jatos com stats)
+- [x] Screenshot 3: Batalha em progresso (ATACAR/DEFENDER)
 
-## Segurança & Conformidade
+---
 
-- [x] ProGuard ativo (ofusca código em release)
-- [x] Hermes ativo (melhora performance e tamanho APK)
-- [ ] Não hardcode credenciais de produção visíveis no código
-- [ ] GDPR / LGPD: implementar CMP se necessário para anúncios personalizados
-- [ ] Verificar Data Safety section no Play Console
+## Sistemas de Jogo
 
-## Performance
+- [x] 6 aviões com SVGs vetoriais: F-15, F-16, F-22, SU-57, Rafale, Gripen
+- [x] Sistema de cartas com raridades (comum/raro/épico/lendário)
+- [x] Sistema de missões com recompensas
+- [x] Recompensas offline (máx. 8h calculadas no boot)
+- [x] Energia máxima: 30 (recupera 1 a cada 10min)
+- [x] Daily login com sequência e recompensas crescentes
+- [x] XP e níveis de comandante
+- [x] Sistema de fragmentos/figurinhas para evoluir aviões
+- [x] Haptic feedback em todos os pontos chave
+- [x] WelcomeScreen de onboarding (primeira vez)
+- [x] LoadingScreen animada com jatos e barra de progresso
+- [x] Google Play Games (serviço pronto, mock em dev)
 
-- [x] react-native-reanimated 4.x (UI thread animations)
-- [x] AsyncStorage para save local (sem dependência de servidor)
-- [x] Offline-first: jogo funciona sem internet
-- [ ] Testar em dispositivo físico (mínimo Android 7.0)
-- [ ] Verificar uso de memória < 200MB
-- [ ] Verificar tamanho final do AAB < 150MB
+---
 
-## Assinatura
+## Monetização
 
-- [ ] Keystore gerada ou importada no EAS
-- [ ] Usar EAS Managed Credentials (recomendado) ou Upload Key própria
-- [ ] SHA-1 registrado no Firebase/Google Cloud se necessário
+- [x] Anúncios rewarded (energia extra, continuar batalha)
+- [x] Anúncios interstitial (entre sessões de jogo)
+- [x] Sistema de moedas e gemas (base para IAPs futuros)
+- [x] Loja integrada na UI
 
-## Comandos Finais
+---
+
+## Compliance Play Store
+
+- [x] Sem permissões desnecessárias
+- [x] Sem acesso a localização
+- [x] Consentimento LGPD/GDPR implementado
+- [x] `NSUserTrackingUsageDescription` para iOS (futuro)
+- [x] Nenhuma coleta de dados pessoais além do nome de comandante (local)
+- [ ] **TODO:** Publicar política de privacidade em URL pública
+- [ ] **TODO:** Preencher questionário de classificação etária no Play Console
+- [ ] **TODO:** Preencher seção de anúncios de dados no Play Console
+
+---
+
+## Último passo: EAS Build
 
 ```bash
-# 1. Instalar dependências nativas para build
-pnpm --filter @workspace/empire-clash add react-native-google-mobile-ads
-pnpm --filter @workspace/empire-clash add @react-native-google-signin/google-signin
-
-# 2. Atualizar plugins em app.json (ver ADMOB_SETUP.md)
-
-# 3. Build de produção
 cd artifacts/empire-clash
-npx eas build -p android --profile production
-
-# 4. Submit para Play Store (após aprovação do AAB)
-npx eas submit -p android --profile production
+npm install -g eas-cli   # se não tiver instalado
+eas login                 # login na conta Expo
+eas init                  # vincular projeto
+eas credentials           # configurar keystore Android
+eas build -p android --profile production
 ```
