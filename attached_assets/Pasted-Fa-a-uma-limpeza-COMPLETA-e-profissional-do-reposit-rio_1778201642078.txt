@@ -1,0 +1,94 @@
+Faça uma limpeza COMPLETA e profissional do repositório Empire Clash.
+
+Corrija TODOS os problemas de Git, merge, build e publicação automaticamente.
+
+Tarefas obrigatórias:
+
+1. Resolver conflitos Git
+- remover qualquer .git/index.lock
+- finalizar ou abortar merges travados
+- garantir branch main limpa
+- sincronizar com origin/main
+- corrigir conflitos no app.json
+- commitar tudo corretamente
+- realizar push final no GitHub
+
+2. Validar projeto Expo/EAS
+- validar app.json
+- validar eas.json
+- validar package.json
+- validar plugins Expo
+- remover dependências quebradas
+- corrigir peer dependencies
+- corrigir metro/web bundle
+- validar AndroidManifest
+- validar SDK 35
+- validar Min SDK 24
+- validar Hermes
+- validar ProGuard
+- validar ShrinkResources
+
+3. AdMob produção
+- instalar react-native-google-mobile-ads
+- configurar plugin corretamente
+- validar App ID
+- validar Rewarded Ads
+- validar Interstitial Ads
+- validar preload de anúncios
+- validar consentimento LGPD/GDPR
+- confirmar useTestAds false
+- confirmar sem erros de build
+
+4. Google Play Games
+- validar login Google
+- validar save local
+- validar sincronização
+- validar autenticação
+- validar serviços Android
+
+5. Melhorias visuais
+- melhorar HUD
+- melhorar partículas
+- melhorar explosões
+- adicionar glow premium
+- melhorar sombras dos aviões
+- melhorar animações
+- melhorar loading screen
+- melhorar login screen
+- melhorar feedback tátil
+- adicionar sons de clique
+- melhorar efeitos de upgrade
+
+6. Assets
+- validar ícone 1024x1024
+- validar adaptive icon
+- validar splash screen
+- validar screenshots
+- validar feature graphic
+
+7. Build final
+Executar:
+npx eas build -p android --profile production
+
+8. Confirmações finais
+Confirmar:
+✅ Play Store sem erros
+✅ package único válido
+✅ AAB válido
+✅ AdMob funcionando
+✅ Google Play Games funcionando
+✅ sem plugins quebrados
+✅ sem dependências quebradas
+✅ sem conflitos Git
+✅ pronto para monetização real
+✅ pronto para publicação oficial
+
+9. Criar documentação
+Atualizar:
+- BUILDING.md
+- ADMOB_SETUP.md
+- PLAYSTORE_CHECKLIST.md
+
+10. Fazer commit final profissional
+Commit:
+"release: final production build for Play Store"
